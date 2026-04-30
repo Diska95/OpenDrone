@@ -1,25 +1,36 @@
 <template>
   <div id="app">
     <nav class="navbar">
-      <router-link to="/" class="brand">POLY<span>DRONE</span></router-link>
-      <div class="nav-center">
-        <!-- ADMIN MODE: nav dedicata operatore di piattaforma -->
+      <router-link to="/" class="brand">OPEN<span>DRONE</span></router-link>
+
+      <div class="nav-center" :class="{ 'mobile-open': mobileOpen }">
         <template v-if="auth.isAdmin">
-          <router-link to="/admin" class="nav-link admin-link">★ Dashboard</router-link>
-          <router-link to="/admin/projects" class="nav-link admin-link">Progetti</router-link>
-          <router-link to="/admin/users" class="nav-link admin-link">Utenti</router-link>
-          <router-link to="/admin/orders" class="nav-link admin-link">Ordini</router-link>
-          <router-link to="/projects" class="nav-link" style="opacity: .6">Catalogo (preview)</router-link>
+          <router-link to="/admin" class="nav-link admin-link" @click="mobileOpen=false">★ Dashboard</router-link>
+          <router-link to="/admin/projects" class="nav-link admin-link" @click="mobileOpen=false">Progetti</router-link>
+          <router-link to="/admin/users" class="nav-link admin-link" @click="mobileOpen=false">Utenti</router-link>
+          <router-link to="/admin/orders" class="nav-link admin-link" @click="mobileOpen=false">Ordini</router-link>
+          <router-link to="/projects" class="nav-link" style="opacity:.6" @click="mobileOpen=false">Catalogo</router-link>
         </template>
-        <!-- USER MODE: designer / customer / nodo -->
         <template v-else>
-          <router-link to="/projects" class="nav-link">Catalogo</router-link>
-          <router-link v-if="auth.isDesigner" to="/my-projects" class="nav-link">I miei progetti</router-link>
-          <router-link v-if="auth.isDesigner" to="/projects/new" class="nav-link">Carica progetto</router-link>
-          <router-link v-if="auth.isAuthenticated" to="/orders" class="nav-link">Ordini</router-link>
-          <router-link v-if="auth.isAuthenticated" to="/dashboard" class="nav-link">Dashboard</router-link>
+          <router-link to="/projects" class="nav-link" @click="mobileOpen=false">Catalogo</router-link>
+          <router-link v-if="auth.isDesigner" to="/my-projects" class="nav-link" @click="mobileOpen=false">I miei progetti</router-link>
+          <router-link v-if="auth.isDesigner" to="/projects/new" class="nav-link" @click="mobileOpen=false">Carica progetto</router-link>
+          <router-link v-if="auth.isAuthenticated" to="/orders" class="nav-link" @click="mobileOpen=false">Ordini</router-link>
+          <router-link v-if="auth.isAuthenticated" to="/dashboard" class="nav-link" @click="mobileOpen=false">Dashboard</router-link>
         </template>
+        <div class="mobile-auth">
+          <template v-if="!auth.isAuthenticated">
+            <router-link to="/login" class="btn-sm btn-ghost" @click="mobileOpen=false">Accedi</router-link>
+            <router-link to="/register" class="btn-sm btn-accent" @click="mobileOpen=false">Registrati</router-link>
+          </template>
+          <template v-else>
+            <span class="role-badge" :class="primaryRoleClass">{{ primaryRole }}</span>
+            <router-link to="/profile" class="btn-sm btn-ghost" @click="mobileOpen=false">{{ auth.user?.first_name || auth.user?.email?.split('@')[0] }}</router-link>
+            <button class="btn-sm btn-danger" @click="handleLogout">Esci</button>
+          </template>
+        </div>
       </div>
+
       <div class="nav-right">
         <template v-if="auth.isAuthenticated">
           <span class="role-badge" :class="primaryRoleClass">{{ primaryRole }}</span>
@@ -31,7 +42,13 @@
           <router-link to="/register" class="btn-sm btn-accent">Registrati</router-link>
         </template>
       </div>
+
+      <button class="hamburger" @click="mobileOpen = !mobileOpen" :class="{ open: mobileOpen }">
+        <span></span><span></span><span></span>
+      </button>
     </nav>
+
+    <div class="mobile-overlay" v-if="mobileOpen" @click="mobileOpen=false"></div>
 
     <main class="main-content">
       <router-view :key="$route.fullPath" />
@@ -42,7 +59,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import { useRouter } from 'vue-router'
@@ -50,6 +67,7 @@ import { useRouter } from 'vue-router'
 const auth = useAuthStore()
 const toast = useToastStore()
 const router = useRouter()
+const mobileOpen = ref(false)
 
 const primaryRole = computed(() => {
   if (!auth.user?.roles?.length) return 'user'
@@ -60,11 +78,12 @@ const primaryRole = computed(() => {
 const primaryRoleClass = computed(() => {
   const r = primaryRole.value
   if (r === 'admin') return 'admin'
-  if (r === 'designer' || r === 'print_node' || r === 'assembly_center') return 'creator'
+  if (['designer', 'print_node', 'assembly_center'].includes(r)) return 'creator'
   return 'user'
 })
 
 async function handleLogout() {
+  mobileOpen.value = false
   await auth.logout()
   toast.show('Disconnesso')
   router.push('/')
@@ -328,4 +347,62 @@ input, button, select, textarea { font-family: var(--font); }
   max-width: 380px;
 }
 .toast.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+/* ── HAMBURGER / MOBILE NAV ── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: auto;
+}
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--muted);
+  border-radius: 2px;
+  transition: all .25s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); background: var(--text); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); background: var(--text); }
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 190;
+}
+
+.mobile-auth { display: none; }
+
+@media (max-width: 768px) {
+  .hamburger { display: flex; }
+  .nav-right { display: none; }
+  .nav-center {
+    display: none;
+    position: fixed;
+    top: 57px;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    z-index: 199;
+  }
+  .nav-center.mobile-open { display: flex; }
+  .nav-center .nav-link { padding: 10px 12px; width: 100%; border-radius: 8px; font-size: 14px; }
+  .mobile-auth { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .mobile-auth .btn-sm { width: 100%; justify-content: center; padding: 10px; font-size: 13px; }
+  .mobile-overlay { display: block; }
+}
+
 </style>

@@ -32,3 +32,17 @@ Formato: `[DATA] TIPO: descrizione` — autore: Claude AI
 - `docker-compose.prod.yml` — nuovo file per deploy su EC2: gunicorn, nginx, certbot SSL, redis persistente, celery
 - `nginx/opendrone.conf` — riscritta per produzione: HTTP→HTTPS redirect, SSL TLS 1.2/1.3, proxy frontend Vercel, proxy backend API
 - `DEPLOY.md` — guida completa step-by-step: EC2, RDS, S3, SES, SSL Let's Encrypt, Vercel
+
+## [2026-04-30] — documentazione
+
+### docs: aggiunto TODONEXT.md
+- `TODONEXT.md` — lista completa delle cose da fare con priorità (alta/media/bassa) e sezione completato
+
+## [2026-04-30] — navbar
+
+### feat: navbar globale aggiornata (App.vue)
+- `frontend/src/App.vue` — fix brand POLYDRONE → OPENDRONE
+- Aggiunto menu hamburger per mobile (viewport < 768px)
+- Menu mobile con overlay, animazione apertura/chiusura
+- Link auth (accedi/registrati/logout) visibili anche su mobile
+- Chiusura automatica menu al click su un link
