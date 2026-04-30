@@ -4,7 +4,7 @@
       <div class="auth-top">
         <div class="page-label">// accedi</div>
         <div class="auth-title">Bentornato</div>
-        <div class="auth-sub">Accedi al tuo account PolyDrone</div>
+        <div class="auth-sub">Accedi al tuo account OpenDrone</div>
       </div>
       <div class="auth-body">
         <div v-if="error" class="alert danger">{{ error }}</div>

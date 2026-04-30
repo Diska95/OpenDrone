@@ -2,7 +2,7 @@
   <div class="wrap wide">
     <div class="page-label">// pannello admin</div>
     <h1 class="page-title">Operatore di piattaforma</h1>
-    <p class="page-sub">Stato generale di PolyDrone e azioni rapide.</p>
+    <p class="page-sub">Stato generale di OpenDrone e azioni rapide.</p>
 
     <!-- Stats grid -->
     <div class="stat-grid">

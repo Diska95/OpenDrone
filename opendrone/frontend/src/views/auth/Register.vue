@@ -4,7 +4,7 @@
       <div class="auth-top">
         <div class="page-label">// nuovo account</div>
         <div class="auth-title">Crea il tuo account</div>
-        <div class="auth-sub">Scegli come vuoi usare PolyDrone</div>
+        <div class="auth-sub">Scegli come vuoi usare OpenDrone</div>
       </div>
       <div class="auth-body">
         <div v-if="error" class="alert danger">{{ error }}</div>

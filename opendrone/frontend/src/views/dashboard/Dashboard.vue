@@ -75,7 +75,7 @@
     <!-- Customer -->
     <div v-else>
       <div class="card welcome-card">
-        <h3>Benvenuto su PolyDrone!</h3>
+        <h3>Benvenuto su OpenDrone!</h3>
         <p>Esplora il catalogo, trova un progetto drone open e ordinalo come kit o pre-assemblato.</p>
         <router-link to="/projects" class="btn primary" style="margin-top: 14px">Esplora il catalogo →</router-link>
       </div>
