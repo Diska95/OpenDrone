@@ -1,0 +1,10 @@
+[
+  {"model": "marketplace.dronecategory", "pk": 1, "fields": {"name": "Agricoltura", "slug": "agricoltura", "icon": "🌾", "description": "Irrorazione, mappatura, monitoraggio colture"}},
+  {"model": "marketplace.dronecategory", "pk": 2, "fields": {"name": "Ispezione", "slug": "ispezione", "icon": "🔍", "description": "Infrastrutture, edifici, impianti"}},
+  {"model": "marketplace.dronecategory", "pk": 3, "fields": {"name": "Fotografia", "slug": "fotografia", "icon": "📷", "description": "Foto e video professionali"}},
+  {"model": "marketplace.dronecategory", "pk": 4, "fields": {"name": "Ricerca", "slug": "ricerca", "icon": "🔬", "description": "Uso scientifico e universitario"}},
+  {"model": "marketplace.dronecategory", "pk": 5, "fields": {"name": "Racing", "slug": "racing", "icon": "🏁", "description": "FPV e competizioni"}},
+  {"model": "marketplace.dronecategory", "pk": 6, "fields": {"name": "Sicurezza", "slug": "sicurezza", "icon": "🛡️", "description": "Sorveglianza e ricerca/soccorso"}},
+  {"model": "marketplace.dronecategory", "pk": 7, "fields": {"name": "Educazione", "slug": "educazione", "icon": "🎓", "description": "Kit didattici e STEM"}},
+  {"model": "marketplace.dronecategory", "pk": 8, "fields": {"name": "Industria", "slug": "industria", "icon": "🏭", "description": "Logistica, inventario, qualità"}}
+]
