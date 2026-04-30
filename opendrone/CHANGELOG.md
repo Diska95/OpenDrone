@@ -46,3 +46,9 @@ Formato: `[DATA] TIPO: descrizione` — autore: Claude AI
 - Menu mobile con overlay, animazione apertura/chiusura
 - Link auth (accedi/registrati/logout) visibili anche su mobile
 - Chiusura automatica menu al click su un link
+
+## [2026-04-30] — sicurezza
+
+### feat: aggiunto .gitignore
+- `.gitignore` — creato da zero: esclude .env, .env.production, staticfiles, media, node_modules, __pycache__, .DS_Store, certificati SSL, editor files
+- Verificato che backend/.env contenga solo valori placeholder, nessun segreto reale
