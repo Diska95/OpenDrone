@@ -22,3 +22,13 @@ Formato: `[DATA] TIPO: descrizione` — autore: Claude AI
 - `frontend/src/api/client.js` — Axios con auto-refresh JWT e redirect a /login su 401 ✓
 - `frontend/src/stores/auth.js` — Pinia store con login, register, logout, fetchMe ✓
 - `frontend/src/api/auth.js` — authApi completo ✓
+
+## [2026-04-30] — go-live preparation
+
+### feat: configurazione produzione AWS
+- `backend/config/settings/production.py` — riscritta completamente: sicurezza HTTPS, RDS con SSL, S3, SES, Redis cache, logging strutturato
+- `backend/.env.production` — template env per produzione con tutti i valori necessari
+- `backend/requirements.txt` — aggiunto `gunicorn==22.0.0` necessario per produzione
+- `docker-compose.prod.yml` — nuovo file per deploy su EC2: gunicorn, nginx, certbot SSL, redis persistente, celery
+- `nginx/opendrone.conf` — riscritta per produzione: HTTP→HTTPS redirect, SSL TLS 1.2/1.3, proxy frontend Vercel, proxy backend API
+- `DEPLOY.md` — guida completa step-by-step: EC2, RDS, S3, SES, SSL Let's Encrypt, Vercel
