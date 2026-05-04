@@ -5,44 +5,14 @@ Formato: `[DATA] TIPO: descrizione` — autore: Claude AI
 
 ---
 
-## [2026-05-04] — deploy produzione AWS + Vercel
+## [2026-04-30] — bugfix preview & refactor JS
 
-### fix: requirements.txt — nome pacchetto corretto
-- `backend/requirements.txt` — corretto `django-decouple==3.8` → `python-decouple==3.8` (il pacchetto corretto su PyPI)
-
-### fix: nginx — rimossa configurazione SSL per deploy senza dominio
-- `nginx/opendrone.conf` — riscritta completamente per funzionare con IP pubblico senza certificati SSL
-  - Rimossi tutti i blocchi `listen 443 ssl`
-  - Rimossi riferimenti a `tuodominio.it`
-  - Aggiunto unico server block `listen 80` con `server_name 16.171.15.90`
-  - Proxy verso `backend:8000` per tutte le route
-
-### fix: production.py — disabilitato SECURE_SSL_REDIRECT
-- `backend/config/settings/production.py` — `SECURE_SSL_REDIRECT = False` per deploy senza HTTPS diretto
-- ⚠️ **Da riabilitare** quando verrà aggiunto il dominio con SSL Let's Encrypt
-
-### fix: backend/.env — ALLOWED_HOSTS aggiornato
-- `backend/.env` — aggiunto `ALLOWED_HOSTS=*` per accettare richieste da qualsiasi host (temporaneo, da restringere in produzione con dominio)
-- Aggiunto `SECURE_SSL_REDIRECT=False`
-- Compilati valori reali: `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_STORAGE_BUCKET_NAME`
-
-### feat: vercel.json — proxy API verso backend EC2
-- `frontend/vercel.json` — **file nuovo**
-  - Rewrite `/api/:path*` → `http://16.171.15.90/api/:path*`
-  - Risolve il problema Mixed Content (Vercel HTTPS → EC2 HTTP)
-  - Il frontend usa URL relativi `/api/...` invece dell'IP diretto
-
-### infra: risorse AWS create
-- **EC2**: `t3.micro` Ubuntu 24.04 LTS, IP pubblico `16.171.15.90`, Security Group con porte 22/80/443
-- **RDS**: PostgreSQL 16, istanza `opendrone`, utente `opendrone_user`, endpoint `opendrone.c9iiqqiiskta.eu-north-1.rds.amazonaws.com`
-- **S3**: bucket `opendrone-files`, regione `eu-south-1`
-- **IAM**: utente `opendrone-s3-user` con policy `AmazonS3FullAccess`
-- Connessione EC2↔RDS configurata tramite Security Group automatico AWS
-
-### infra: stack Docker avviato su EC2
-- Servizi attivi: `backend` (gunicorn), `celery`, `celery-beat`, `redis`, `nginx`, `certbot`
-- Migrazioni applicate, static files copiati su S3
-- Frontend deployato su Vercel: `open-drone-virid.vercel.app`
+### fix: conflitto nomi variabile/funzione nella preview HTML
+- `opendrone_preview.html` — **Bug critico**: la variabile `selRole` e la funzione `selRole()` si sovrascrivevano a vicenda in JavaScript strict mode, rendendo tutti i click handler non funzionanti
+- Soluzione: refactor completo dello script in oggetti con namespace (`P`, `C`, `Detail`, `Auth`, `Sub`, `Tab`, `T`) che isolano ogni funzione ed eliminano qualsiasi possibilità di conflitto tra nomi
+- `AppState.chosenRole` sostituisce la variabile globale `selRole`
+- `Auth.pickRole()` sostituisce la funzione globale `selRole()`
+- Tutti i pulsanti navbar, login rapidi, wizard submit, filtri catalogo ora funzionano correttamente
 
 ---
 
