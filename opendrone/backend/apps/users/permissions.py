@@ -23,6 +23,13 @@ class IsAdminUser(BasePermission):
         )
 
 
+class IsSuperUser(BasePermission):
+    """Solo superuser Django (creati con createsuperuser).
+    Permesso massimo: hard-delete e accesso archivio."""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_superuser
+
+
 class IsCertifiedDesigner(BasePermission):
     def has_permission(self, request, view):
         return (

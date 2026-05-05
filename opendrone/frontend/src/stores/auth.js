@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isPrintNode = computed(() => user.value?.roles?.includes('print_node'))
   const isAssemblyCenter = computed(() => user.value?.roles?.includes('assembly_center'))
   const isAdmin = computed(() => user.value?.roles?.includes('admin') || user.value?.is_staff)
+  const isSuperuser = computed(() => !!user.value?.is_superuser)
 
   async function login(email, password) {
     const { data } = await authApi.login(email, password)
@@ -64,5 +65,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, accessToken, refreshToken, isAuthenticated, isDesigner, isPrintNode, isAssemblyCenter, isAdmin, login, register, loginWithGoogle, logout, fetchMe }
+  return { user, accessToken, refreshToken, isAuthenticated, isDesigner, isPrintNode, isAssemblyCenter, isAdmin, isSuperuser, login, register, loginWithGoogle, logout, fetchMe }
 })

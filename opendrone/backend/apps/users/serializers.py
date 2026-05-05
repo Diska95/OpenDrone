@@ -72,11 +72,12 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'bio', 'avatar',
-            'roles', 'is_verified', 'is_staff', 'is_active', 'stripe_account_id',
+            'roles', 'is_verified', 'is_staff', 'is_superuser', 'is_active',
+            'stripe_account_id',
             'designer_profile', 'print_node_profile', 'assembly_profile',
             'created_at',
         ]
-        read_only_fields = ['id', 'email', 'roles', 'is_verified', 'is_staff', 'is_active', 'stripe_account_id', 'created_at']
+        read_only_fields = ['id', 'email', 'roles', 'is_verified', 'is_staff', 'is_superuser', 'is_active', 'stripe_account_id', 'created_at']
 
     def get_designer_profile(self, obj):
         if hasattr(obj, 'designer_profile'):

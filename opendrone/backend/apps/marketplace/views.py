@@ -25,9 +25,10 @@ class ProjectListView(generics.ListCreateAPIView):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return DroneProject.objects.filter(status=DroneProject.Status.PUBLISHED).select_related(
-            'designer', 'category'
-        ).prefetch_related('files', 'bom_items')
+        return DroneProject.objects.filter(
+            status=DroneProject.Status.PUBLISHED,
+            archived_at__isnull=True,
+        ).select_related('designer', 'category').prefetch_related('files', 'bom_items')
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -75,12 +76,21 @@ class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer.save()
 
     def perform_destroy(self, instance):
-        if instance.designer != self.request.user and not self.request.user.is_staff:
+        user = self.request.user
+        # Superuser puo' fare hard-delete in qualsiasi stato
+        if user.is_superuser:
+            instance.delete()
+            return
+        # Designer proprietario o staff: solo se in bozza
+        if instance.designer != user and not user.is_staff:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied()
         if instance.status != DroneProject.Status.DRAFT:
             from rest_framework.exceptions import ValidationError
-            raise ValidationError('Solo le bozze possono essere eliminate.')
+            raise ValidationError(
+                'Solo le bozze possono essere eliminate. '
+                'Per progetti pubblicati usa "Archivia" (admin) o richiedi al superuser di eliminare.'
+            )
         instance.delete()
 
 
@@ -255,11 +265,28 @@ class AdminAllProjectsView(generics.ListAPIView):
         return [IsAuthenticated(), IsAdminUser()]
 
     def get_queryset(self):
-        qs = DroneProject.objects.all().select_related('designer', 'category').prefetch_related('files', 'bom_items')
+        qs = DroneProject.objects.filter(archived_at__isnull=True).select_related(
+            'designer', 'category'
+        ).prefetch_related('files', 'bom_items')
         status_filter = self.request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
         return qs.order_by('-created_at')
+
+
+class AdminArchivedProjectsView(generics.ListAPIView):
+    """Progetti archiviati — solo superuser."""
+    serializer_class = DroneProjectListSerializer
+    pagination_class = None
+
+    def get_permissions(self):
+        from apps.users.permissions import IsSuperUser
+        return [IsAuthenticated(), IsSuperUser()]
+
+    def get_queryset(self):
+        return DroneProject.objects.filter(archived_at__isnull=False).select_related(
+            'designer', 'category'
+        ).prefetch_related('files', 'bom_items').order_by('-archived_at')
 
 
 @api_view(['POST'])
@@ -289,3 +316,36 @@ def reject_project(request, slug):
         project.compliance_notes = (project.compliance_notes or '') + f'\n[ADMIN REJECT] {reason}'
     project.save()
     return Response({'detail': 'Progetto rifiutato.', 'status': project.status})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def archive_project(request, slug):
+    """Soft-delete: nasconde il progetto da catalogo e da admin/all.
+    Disponibile a qualsiasi admin (is_staff o role 'admin')."""
+    user = request.user
+    if not (user.is_staff or user.has_role('admin')):
+        return Response({'detail': 'Solo gli admin possono archiviare progetti.'}, status=403)
+    from django.utils import timezone
+    project = generics.get_object_or_404(DroneProject, slug=slug)
+    if project.archived_at:
+        return Response({'detail': 'Progetto gia archiviato.'}, status=400)
+    project.archived_at = timezone.now()
+    project.save(update_fields=['archived_at'])
+    return Response({'detail': 'Progetto archiviato.', 'archived_at': project.archived_at})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def unarchive_project(request, slug):
+    """Ripristina un progetto dall'archivio.
+    Disponibile a qualsiasi admin."""
+    user = request.user
+    if not (user.is_staff or user.has_role('admin')):
+        return Response({'detail': 'Solo gli admin possono ripristinare progetti.'}, status=403)
+    project = generics.get_object_or_404(DroneProject, slug=slug)
+    if not project.archived_at:
+        return Response({'detail': 'Progetto non archiviato.'}, status=400)
+    project.archived_at = None
+    project.save(update_fields=['archived_at'])
+    return Response({'detail': 'Progetto ripristinato.'})
