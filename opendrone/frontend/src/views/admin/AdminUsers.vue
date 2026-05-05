@@ -92,10 +92,12 @@ function initials(u) {
   return (f + l) || u.email[0].toUpperCase()
 }
 function hasCertifiedProfile(u) {
-  return u.print_node_profile?.is_certified || u.assembly_profile?.is_certified || u.designer_profile?.is_certified
+  // I designer non si certificano per persona ma per singolo progetto
+  // (workflow di approvazione progetti in /admin/projects).
+  return u.print_node_profile?.is_certified || u.assembly_profile?.is_certified
 }
 function canCertify(u) {
-  return u.print_node_profile || u.assembly_profile || u.designer_profile
+  return u.print_node_profile || u.assembly_profile
 }
 
 const filtered = computed(() => {
