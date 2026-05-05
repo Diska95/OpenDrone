@@ -5,6 +5,23 @@ Formato: `[DATA] TIPO: descrizione` — autore: Claude AI
 
 ---
 
+## [2026-05-05] — fix login produzione (HTTPS Vercel ↔ HTTP EC2)
+
+### fix: production.py — SECURE_SSL_REDIRECT/HSTS non più hard-coded a True
+- `backend/config/settings/production.py`
+  - `SECURE_SSL_REDIRECT` ora letto da env (default `False`)
+  - `SECURE_HSTS_*` derivati da `SECURE_HSTS_SECONDS` (default `0` → disattivati)
+  - `SESSION_COOKIE_SECURE` / `CSRF_COOKIE_SECURE` ora opt-in via env
+  - **Motivo**: con backend EC2 esposto in HTTP (no SSL su `16.171.15.90`), il vecchio `True` causava un 301 a `https://...` su ogni richiesta proxata da Vercel → login rotto. Da riattivare via env quando ci sarà il dominio + Let's Encrypt.
+
+### fix: client axios — fallback a `/api` (path relativo)
+- `frontend/src/api/client.js`
+  - `baseURL` di default ora è `/api` invece di `http://localhost:8000/api`
+  - Così il rewrite di `vercel.json` viene effettivamente usato anche se `VITE_API_URL` non è impostata su Vercel
+  - In dev funziona comunque grazie al proxy `/api` di `vite.config.js`
+
+---
+
 ## [2026-05-04] — deploy produzione AWS + Vercel
 
 ### fix: requirements.txt — nome pacchetto corretto
