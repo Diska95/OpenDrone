@@ -1,16 +1,6 @@
 {
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "http://16.171.15.90/api/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
-      ]
-    }
+    { "source": "/api", "destination": "http://16.171.15.90/api" },
+    { "source": "/api/(.*)", "destination": "http://16.171.15.90/api/$1" }
   ]
 }
