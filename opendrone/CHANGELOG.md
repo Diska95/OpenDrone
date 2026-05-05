@@ -20,6 +20,28 @@ Formato: `[DATA] TIPO: descrizione` — autore: Claude AI
   - Così il rewrite di `vercel.json` viene effettivamente usato anche se `VITE_API_URL` non è impostata su Vercel
   - In dev funziona comunque grazie al proxy `/api` di `vite.config.js`
 
+### fix: vercel.json — rewrite con regex `(.*)` per gestire trailing slash
+- `frontend/vercel.json`
+  - Sostituito `:path*` con regex `(.*)` + capture `$1`
+  - **Motivo**: il pattern `:path*` di Vercel non matcha i path con trailing slash → `/api/auth/login/` ritornava 404 di Vercel mentre `/api/auth/login` (no slash) veniva proxato. Le chiamate axios usano sempre il trailing slash (Django `APPEND_SLASH=True`), quindi il login era sempre rotto.
+  - Aggiunta regola separata per `/api` esatto.
+  - Rimossi gli `headers` CORS — non servono perché le chiamate sono same-origin via il rewrite Vercel.
+
+### fix: portati nel repo i fix locali sopravvissuti solo sull'EC2
+Il deploy del 2026-05-04 aveva edits locali non committati. Ora committati per davvero:
+- `backend/requirements.txt` — `django-decouple` → `python-decouple` (pacchetto reale su PyPI)
+- `nginx/opendrone.conf` — riscritto per deploy HTTP-only su IP nudo (no SSL, no redirect a `tuodominio.it`)
+- ⚠️ Quando ci sarà un dominio reale, `nginx/opendrone.conf` andrà esteso con i blocchi 443 + Let's Encrypt e `production.py` con env `SECURE_SSL_REDIRECT=True` + `SECURE_HSTS_SECONDS=31536000`.
+
+### infra: configurazione Vercel
+- Framework Preset: `Vite` (era `Other`)
+- Env var `VITE_API_URL=/api` per Production+Preview+Development
+- Deployment Protection disattivata (sito pubblico)
+
+### deploy: stato finale verificato
+- Login + registrazione funzionanti su `https://open-drone-virid.vercel.app`
+- Pipeline: Browser HTTPS → Vercel rewrite `/api/(.*)` → `http://16.171.15.90/api/$1` → nginx → gunicorn/Django → RDS
+
 ---
 
 ## [2026-05-04] — deploy produzione AWS + Vercel
