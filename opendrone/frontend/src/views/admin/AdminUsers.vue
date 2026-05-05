@@ -13,6 +13,14 @@
       <button class="chip" :class="{ on: roleFilter === 'admin' }" @click="setRole('admin')">Admin ({{ countByRole('admin') }})</button>
     </div>
 
+    <div class="search-bar">
+      <div class="search-input-wrap">
+        <input class="input search-input" type="search" v-model="search" placeholder="Cerca per nome, cognome o email…" />
+        <button v-if="search" class="search-clear" type="button" @click="search = ''" aria-label="Pulisci">✕</button>
+      </div>
+      <span v-if="search" class="search-meta">{{ filtered.length }} {{ filtered.length === 1 ? 'risultato' : 'risultati' }}</span>
+    </div>
+
     <p v-if="loading" class="empty">Caricamento...</p>
     <div v-else-if="!filtered.length" class="empty-card card">
       <p>Nessun utente in questa vista.</p>
@@ -60,6 +68,7 @@ const auth = useAuthStore()
 const users = ref([])
 const loading = ref(true)
 const roleFilter = ref('')
+const search = ref('')
 const busy = reactive({})
 
 const ROLE_LABELS = {
@@ -90,8 +99,23 @@ function canCertify(u) {
 }
 
 const filtered = computed(() => {
-  if (!roleFilter.value) return users.value
-  return users.value.filter(u => u.roles?.includes(roleFilter.value))
+  let list = users.value
+  if (roleFilter.value) {
+    list = list.filter(u => u.roles?.includes(roleFilter.value))
+  }
+  const q = search.value.trim().toLowerCase()
+  if (q) {
+    list = list.filter(u => {
+      const haystack = [
+        u.email,
+        u.first_name,
+        u.last_name,
+        `${u.first_name || ''} ${u.last_name || ''}`,
+      ].filter(Boolean).join(' ').toLowerCase()
+      return haystack.includes(q)
+    })
+  }
+  return list
 })
 
 function countByRole(r) { return users.value.filter(u => u.roles?.includes(r)).length }
@@ -148,7 +172,41 @@ onMounted(load)
 </script>
 
 <style scoped>
-.filters { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+.filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.search-input-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+.search-input { width: 100%; padding-right: 36px; }
+.search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.search-clear:hover { color: var(--text); }
+.search-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 480px) {
+  .search-input-wrap { max-width: 100%; }
+}
 .chip { background: none; border: 1px solid var(--border); color: var(--muted); padding: 5px 13px; border-radius: 20px; font-family: var(--font); font-size: 12px; cursor: pointer; transition: all .15s; }
 .chip:hover, .chip.on { border-color: var(--accent); color: var(--accent); background: rgba(93,255,159,.06); }
 
