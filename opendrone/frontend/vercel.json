@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api", "destination": "http://16.171.15.90/api" },
-    { "source": "/api/(.*)", "destination": "http://16.171.15.90/api/$1" },
+    { "source": "/api", "destination": "http://16.170.111.228/api" },
+    { "source": "/api/(.*)", "destination": "http://16.170.111.228/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
