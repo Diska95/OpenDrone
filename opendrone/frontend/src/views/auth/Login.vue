@@ -9,6 +9,13 @@
       <div class="auth-body">
         <div v-if="error" class="alert danger">{{ error }}</div>
 
+        <div v-if="googleClientId" class="google-block">
+          <div ref="googleBtnEl" class="google-btn-host"></div>
+          <div v-if="googleLoading" class="google-loading">Accesso con Google…</div>
+        </div>
+
+        <div v-if="googleClientId" class="divider"><span>oppure con email</span></div>
+
         <div class="field">
           <label>Email</label>
           <input class="input" type="email" placeholder="tu@email.it" v-model="form.email" />
@@ -35,10 +42,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
+import { loadGoogleScript, getGoogleClientId } from '@/composables/useGoogleSignIn'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -47,7 +55,10 @@ const route = useRoute()
 const form = ref({ email: '', password: '' })
 const error = ref('')
 const loading = ref(false)
+const googleLoading = ref(false)
 const showPw = ref(false)
+const googleBtnEl = ref(null)
+const googleClientId = getGoogleClientId()
 
 async function handleLogin() {
   if (!form.value.email || !form.value.password) {
@@ -66,6 +77,47 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+async function handleGoogleResponse(response) {
+  if (!response?.credential) return
+  googleLoading.value = true
+  error.value = ''
+  try {
+    const { user } = await auth.loginWithGoogle({ credential: response.credential })
+    toast.show(`✓ Bentornato ${user.first_name || user.email.split('@')[0]}`)
+    router.push(route.query.redirect || '/dashboard')
+  } catch (e) {
+    error.value = e.response?.data?.detail || 'Errore con Google. Riprova.'
+  } finally {
+    googleLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!googleClientId) return
+  await nextTick()
+  try {
+    const google = await loadGoogleScript()
+    google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleResponse,
+      ux_mode: 'popup',
+    })
+    if (googleBtnEl.value) {
+      google.accounts.id.renderButton(googleBtnEl.value, {
+        theme: 'filled_black',
+        size: 'large',
+        type: 'standard',
+        text: 'continue_with',
+        shape: 'rectangular',
+        width: 360,
+        logo_alignment: 'left',
+      })
+    }
+  } catch (e) {
+    console.error('Google script load failed', e)
+  }
+})
 </script>
 
 <style scoped>
@@ -88,6 +140,20 @@ async function handleLogin() {
 .auth-body { padding: 22px 28px 28px; display: flex; flex-direction: column; gap: 14px; }
 .auth-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; margin-top: 4px; }
 .auth-sub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 4px; margin-bottom: 12px; }
+
+.google-block { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.google-btn-host { min-height: 40px; }
+.google-loading { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+.divider {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin: 4px 0;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
 
 .field-wrap { position: relative; }
 .eye {

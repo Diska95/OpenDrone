@@ -33,6 +33,16 @@ export const useAuthStore = defineStore('auth', () => {
     return data.user
   }
 
+  async function loginWithGoogle({ credential, role }) {
+    const { data } = await authApi.googleAuth({ credential, role })
+    user.value = data.user
+    accessToken.value = data.access
+    refreshToken.value = data.refresh
+    localStorage.setItem('access_token', data.access)
+    localStorage.setItem('refresh_token', data.refresh)
+    return { user: data.user, created: data.created }
+  }
+
   async function logout() {
     if (refreshToken.value) {
       try { await authApi.logout(refreshToken.value) } catch {}
@@ -54,5 +64,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, accessToken, refreshToken, isAuthenticated, isDesigner, isPrintNode, isAssemblyCenter, isAdmin, login, register, logout, fetchMe }
+  return { user, accessToken, refreshToken, isAuthenticated, isDesigner, isPrintNode, isAssemblyCenter, isAdmin, login, register, loginWithGoogle, logout, fetchMe }
 })

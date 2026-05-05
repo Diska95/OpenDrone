@@ -4,7 +4,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
 from django.contrib.auth import authenticate
+from django.db import transaction
 
 from .models import User, PrintNodeProfile, AssemblyCenterProfile, DesignerProfile
 from .serializers import (
@@ -46,6 +48,106 @@ def login_view(request):
         'access': str(refresh.access_token),
         'refresh': str(refresh),
     })
+
+
+VALID_SIGNUP_ROLES = {'designer', 'print_node', 'assembly_center', 'customer'}
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def google_auth_view(request):
+    """Login/registrazione con Google Identity Services.
+
+    Riceve un `credential` (id_token JWT firmato da Google), lo verifica con
+    GOOGLE_OAUTH_CLIENT_ID, poi:
+    - se l'utente esiste: rilascia JWT
+    - se non esiste: crea l'utente (password non utilizzabile) col `role`
+      indicato dal client e rilascia JWT
+    """
+    if not settings.GOOGLE_OAUTH_CLIENT_ID:
+        return Response(
+            {'detail': 'Login Google non configurato.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    credential = request.data.get('credential')
+    if not credential:
+        return Response({'detail': 'Token Google mancante.'}, status=400)
+
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+        idinfo = google_id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            settings.GOOGLE_OAUTH_CLIENT_ID,
+        )
+    except ValueError as exc:
+        logger.warning('Google id_token non valido: %s', exc)
+        return Response({'detail': 'Token Google non valido.'}, status=401)
+
+    email = (idinfo.get('email') or '').lower().strip()
+    if not email or not idinfo.get('email_verified'):
+        return Response({'detail': 'Email Google non verificata.'}, status=400)
+
+    first_name = (idinfo.get('given_name') or '')[:100]
+    last_name = (idinfo.get('family_name') or '')[:100]
+
+    user = User.objects.filter(email__iexact=email).first()
+    created = False
+    if user is None:
+        role = (request.data.get('role') or 'customer').strip()
+        if role not in VALID_SIGNUP_ROLES:
+            return Response({'detail': 'Ruolo non valido.'}, status=400)
+        with transaction.atomic():
+            user = User(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                is_verified=True,
+            )
+            user.set_unusable_password()
+            roles = [role]
+            if 'customer' not in roles:
+                roles.append('customer')
+            user.roles = roles
+            user.save()
+            if role == 'designer':
+                DesignerProfile.objects.create(user=user)
+            elif role == 'print_node':
+                PrintNodeProfile.objects.create(
+                    user=user, business_name='', address='', city='', province='IT'
+                )
+            elif role == 'assembly_center':
+                AssemblyCenterProfile.objects.create(
+                    user=user, business_name='', address='', city='', province='IT'
+                )
+        created = True
+    else:
+        # Utente esistente registrato con password: completa i nomi se vuoti
+        dirty = False
+        if not user.first_name and first_name:
+            user.first_name = first_name
+            dirty = True
+        if not user.last_name and last_name:
+            user.last_name = last_name
+            dirty = True
+        if not user.is_verified:
+            user.is_verified = True
+            dirty = True
+        if dirty:
+            user.save()
+
+    if not user.is_active:
+        return Response({'detail': 'Account disattivato.'}, status=403)
+
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'user': UserSerializer(user).data,
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+        'created': created,
+    }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
 @api_view(['POST'])

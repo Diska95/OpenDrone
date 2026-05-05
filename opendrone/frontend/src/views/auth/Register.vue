@@ -2,84 +2,118 @@
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-top">
-        <div class="page-label">// nuovo account</div>
-        <div class="auth-title">Crea il tuo account</div>
-        <div class="auth-sub">Scegli come vuoi usare OpenDrone</div>
+        <div class="page-label">// nuovo account · step {{ step }}/2</div>
+        <div class="auth-title">{{ step === 1 ? 'Cosa vuoi fare?' : 'Crea il tuo account' }}</div>
+        <div class="auth-sub">
+          {{ step === 1
+            ? 'Scegli come vuoi usare OpenDrone'
+            : 'Registrati con email e password oppure con Google' }}
+        </div>
       </div>
       <div class="auth-body">
         <div v-if="error" class="alert danger">{{ error }}</div>
 
-        <div class="field">
-          <label>Tipo di account</label>
-          <div class="role-grid">
-            <button v-for="r in roles" :key="r.value"
-              type="button"
-              class="role-opt"
-              :class="{ sel: form.role === r.value }"
-              @click="form.role = r.value">
-              <div class="ri">{{ r.icon }}</div>
-              <div class="rn">{{ r.name }}</div>
-              <div class="rd">{{ r.desc }}</div>
-            </button>
-          </div>
-        </div>
-
-        <div class="field-row">
+        <!-- STEP 1: scelta ruolo -->
+        <template v-if="step === 1">
           <div class="field">
-            <label>Nome</label>
-            <input class="input" v-model="form.first_name" placeholder="Mario" />
+            <label>Tipo di account</label>
+            <div class="role-grid">
+              <button v-for="r in roles" :key="r.value"
+                type="button"
+                class="role-opt"
+                :class="{ sel: form.role === r.value }"
+                @click="form.role = r.value">
+                <div class="ri">{{ r.icon }}</div>
+                <div class="rn">{{ r.name }}</div>
+                <div class="rd">{{ r.desc }}</div>
+              </button>
+            </div>
           </div>
+
+          <button class="btn-full primary" type="button" @click="goToStep2">
+            Continua →
+          </button>
+
+          <div class="auth-footer">
+            Hai già un account?
+            <router-link to="/login">Accedi</router-link>
+          </div>
+        </template>
+
+        <!-- STEP 2: scelta metodo -->
+        <template v-else>
+          <div class="role-recap">
+            <span class="rr-label">Stai creando un account come</span>
+            <span class="rr-name">{{ selectedRole?.name }}</span>
+            <button type="button" class="rr-edit" @click="step = 1">cambia</button>
+          </div>
+
+          <template v-if="googleClientId">
+            <div class="google-block">
+              <div ref="googleBtnEl" class="google-btn-host"></div>
+              <div v-if="googleLoading" class="google-loading">Accesso con Google…</div>
+            </div>
+            <div class="divider"><span>oppure con email</span></div>
+          </template>
+
+          <div class="field-row">
+            <div class="field">
+              <label>Nome</label>
+              <input class="input" v-model="form.first_name" placeholder="Mario" />
+            </div>
+            <div class="field">
+              <label>Cognome</label>
+              <input class="input" v-model="form.last_name" placeholder="Rossi" />
+            </div>
+          </div>
+
           <div class="field">
-            <label>Cognome</label>
-            <input class="input" v-model="form.last_name" placeholder="Rossi" />
+            <label>Email</label>
+            <input class="input" type="email" v-model="form.email" placeholder="tu@email.it" />
           </div>
-        </div>
 
-        <div class="field">
-          <label>Email</label>
-          <input class="input" type="email" v-model="form.email" placeholder="tu@email.it" />
-        </div>
-
-        <div class="field">
-          <label>Password</label>
-          <div class="field-wrap">
-            <input class="input" :type="showPw ? 'text' : 'password'" v-model="form.password" placeholder="min. 8 caratteri" style="padding-right:40px" />
-            <button class="eye" type="button" @click="showPw = !showPw">{{ showPw ? '🙈' : '👁️' }}</button>
+          <div class="field">
+            <label>Password</label>
+            <div class="field-wrap">
+              <input class="input" :type="showPw ? 'text' : 'password'" v-model="form.password" placeholder="min. 8 caratteri" style="padding-right:40px" />
+              <button class="eye" type="button" @click="showPw = !showPw">{{ showPw ? '🙈' : '👁️' }}</button>
+            </div>
+            <div class="sbar">
+              <div class="sseg" :style="{ background: strengthScore >= 1 ? strengthColor : 'var(--border)' }"></div>
+              <div class="sseg" :style="{ background: strengthScore >= 2 ? strengthColor : 'var(--border)' }"></div>
+              <div class="sseg" :style="{ background: strengthScore >= 3 ? strengthColor : 'var(--border)' }"></div>
+              <div class="sseg" :style="{ background: strengthScore >= 4 ? strengthColor : 'var(--border)' }"></div>
+            </div>
+            <div class="slbl" :style="{ color: form.password ? strengthColor : 'var(--muted)' }">
+              {{ form.password ? strengthLabel : 'Inserisci una password' }}
+            </div>
           </div>
-          <div class="sbar">
-            <div class="sseg" :style="{ background: strengthScore >= 1 ? strengthColor : 'var(--border)' }"></div>
-            <div class="sseg" :style="{ background: strengthScore >= 2 ? strengthColor : 'var(--border)' }"></div>
-            <div class="sseg" :style="{ background: strengthScore >= 3 ? strengthColor : 'var(--border)' }"></div>
-            <div class="sseg" :style="{ background: strengthScore >= 4 ? strengthColor : 'var(--border)' }"></div>
+
+          <div class="field">
+            <label>Conferma password</label>
+            <input class="input" :type="showPw ? 'text' : 'password'" v-model="form.password2" placeholder="ripeti password" />
           </div>
-          <div class="slbl" :style="{ color: form.password ? strengthColor : 'var(--muted)' }">
-            {{ form.password ? strengthLabel : 'Inserisci una password' }}
+
+          <button class="btn-full primary" :disabled="loading" @click="handleRegister">
+            {{ loading ? 'Creazione...' : 'Crea account →' }}
+          </button>
+
+          <div class="auth-footer">
+            Hai già un account?
+            <router-link to="/login">Accedi</router-link>
           </div>
-        </div>
-
-        <div class="field">
-          <label>Conferma password</label>
-          <input class="input" :type="showPw ? 'text' : 'password'" v-model="form.password2" placeholder="ripeti password" />
-        </div>
-
-        <button class="btn-full primary" :disabled="loading" @click="handleRegister">
-          {{ loading ? 'Creazione...' : 'Crea account →' }}
-        </button>
-
-        <div class="auth-footer">
-          Hai già un account?
-          <router-link to="/login">Accedi</router-link>
-        </div>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
+import { loadGoogleScript, getGoogleClientId } from '@/composables/useGoogleSignIn'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -87,6 +121,10 @@ const router = useRouter()
 const showPw = ref(false)
 const error = ref('')
 const loading = ref(false)
+const googleLoading = ref(false)
+const step = ref(1)
+const googleBtnEl = ref(null)
+const googleClientId = getGoogleClientId()
 
 const roles = [
   { value: 'customer', icon: '↓', name: 'Cliente', desc: 'Acquista droni' },
@@ -100,6 +138,8 @@ const form = ref({
   password: '', password2: '',
   role: 'customer',
 })
+
+const selectedRole = computed(() => roles.find(r => r.value === form.value.role))
 
 const strengthScore = computed(() => {
   const p = form.value.password
@@ -115,6 +155,62 @@ const strengthColor = computed(() => {
 })
 const strengthLabel = computed(() => {
   return ['', 'Debole', 'Discreta', 'Buona', 'Ottima'][strengthScore.value] || ''
+})
+
+async function goToStep2() {
+  step.value = 2
+  if (googleClientId) {
+    await nextTick()
+    await renderGoogleButton()
+  }
+}
+
+async function renderGoogleButton() {
+  if (!googleClientId || !googleBtnEl.value) return
+  try {
+    const google = await loadGoogleScript()
+    google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleResponse,
+      ux_mode: 'popup',
+    })
+    google.accounts.id.renderButton(googleBtnEl.value, {
+      theme: 'filled_black',
+      size: 'large',
+      type: 'standard',
+      text: 'signup_with',
+      shape: 'rectangular',
+      width: 360,
+      logo_alignment: 'left',
+    })
+  } catch (e) {
+    console.error('Google script load failed', e)
+  }
+}
+
+async function handleGoogleResponse(response) {
+  if (!response?.credential) return
+  googleLoading.value = true
+  error.value = ''
+  try {
+    const { user, created } = await auth.loginWithGoogle({
+      credential: response.credential,
+      role: form.value.role,
+    })
+    toast.show(`✓ ${created ? 'Benvenuto' : 'Bentornato'} ${user.first_name || user.email.split('@')[0]}`)
+    router.push('/dashboard')
+  } catch (e) {
+    error.value = e.response?.data?.detail || 'Errore con Google. Riprova.'
+  } finally {
+    googleLoading.value = false
+  }
+}
+
+watch(step, async (s) => {
+  if (s === 2 && googleClientId) {
+    await nextTick()
+    await renderGoogleButton()
+  }
 })
 
 async function handleRegister() {
@@ -188,6 +284,46 @@ async function handleRegister() {
 .role-opt .rn { font-size: 12px; font-weight: 700; }
 .role-opt.sel .rn { color: var(--accent); }
 .role-opt .rd { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+.role-recap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 12px;
+}
+.rr-label { color: var(--muted); font-family: var(--mono); }
+.rr-name { font-weight: 700; color: var(--accent); }
+.rr-edit {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-decoration: underline;
+}
+
+.google-block { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.google-btn-host { min-height: 40px; }
+.google-loading { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+.divider {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin: 4px 0;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.hint { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; }
+.hint code { background: var(--surface); padding: 1px 5px; border-radius: 3px; }
 
 .field-wrap { position: relative; }
 .eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; }
