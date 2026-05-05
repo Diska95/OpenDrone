@@ -52,3 +52,7 @@ docker-compose.override.yml
 
 # ─── SSL / Certificati ────────────────────────────────────────────
 nginx/ssl/
+
+# ─── Documentazione generata ──────────────────────────────────────
+docs/*.pdf
+docs/*.html
