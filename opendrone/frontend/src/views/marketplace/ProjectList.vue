@@ -51,9 +51,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { marketplaceApi } from '@/api/marketplace'
 import client from '@/api/client'
 import ProjectCard from '@/components/ProjectCard.vue'
+
+const route = useRoute()
 
 const projects = ref([])
 const categories = ref([])
@@ -109,6 +112,12 @@ onMounted(async () => {
     const { data } = await marketplaceApi.getCategories()
     categories.value = data.results || data
   } catch {}
+  // Pre-applica filtro categoria se arriva da query string (link da Home)
+  const cat = route.query.category
+  if (cat) {
+    const id = Number(cat)
+    if (!Number.isNaN(id)) filters.value.category = id
+  }
   await loadProjects()
   totalCount.value = resultCount.value
 })

@@ -1,33 +1,196 @@
 <template>
-  <div>
-    <section class="hero-band">
+  <div class="home">
+    <!-- ─────── HERO ─────── -->
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-grid"></div>
       <div class="hero-inner">
-        <div class="hero-label">// marketplace open hardware</div>
-        <h1>Stampa il tuo<br>drone <em>ideale</em></h1>
-        <p>Progetti drone open source validati dalla community. Acquista come kit o pre-assemblato, paga il giusto, supporta i designer.</p>
-        <div class="hero-actions">
-          <router-link to="/projects" class="btn primary">Esplora il catalogo →</router-link>
-          <router-link to="/register" class="btn outline">Diventa creator</router-link>
+        <div class="hero-text">
+          <div class="hero-label">// marketplace · open hardware</div>
+          <h1 class="hero-title">
+            Costruisci il drone <em>che vuoi tu</em>.
+          </h1>
+          <p class="hero-sub">
+            Progetti drone <strong>open source</strong> validati dalla community.
+            Scegli un design, lo facciamo stampare e assemblare in Italia.
+            Paghi solo i materiali + il lavoro reale.
+          </p>
+          <div class="hero-actions">
+            <router-link to="/projects" class="btn-hero primary">
+              <span>Esplora i droni</span>
+              <span class="arr">→</span>
+            </router-link>
+            <router-link to="/register" class="btn-hero outline">Diventa creator</router-link>
+          </div>
+          <div class="hero-stats">
+            <div class="stat">
+              <div class="sn">{{ stats.projects }}</div>
+              <div class="sl">progetti</div>
+            </div>
+            <div class="stat">
+              <div class="sn">{{ stats.creators }}</div>
+              <div class="sl">creator</div>
+            </div>
+            <div class="stat">
+              <div class="sn accent2">−88%</div>
+              <div class="sl">vs DJI</div>
+            </div>
+          </div>
         </div>
-        <div class="hero-stats">
-          <div><div class="hs-num">{{ stats.projects }}</div><div class="hs-lbl">progetti</div></div>
-          <div><div class="hs-num">{{ stats.creators }}</div><div class="hs-lbl">creator</div></div>
-          <div><div class="hs-num">-88%</div><div class="hs-lbl">vs DJI</div></div>
+
+        <!-- visuale: drone SVG -->
+        <div class="hero-visual" aria-hidden="true">
+          <svg viewBox="0 0 320 320" class="drone-svg">
+            <defs>
+              <radialGradient id="rg1" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#5dff9f" stop-opacity=".25"/>
+                <stop offset="100%" stop-color="#5dff9f" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="160" cy="160" r="150" fill="url(#rg1)"/>
+            <!-- arms -->
+            <g stroke="#5dff9f" stroke-width="3" stroke-linecap="round" fill="none">
+              <line x1="160" y1="160" x2="60" y2="60"/>
+              <line x1="160" y1="160" x2="260" y2="60"/>
+              <line x1="160" y1="160" x2="60" y2="260"/>
+              <line x1="160" y1="160" x2="260" y2="260"/>
+            </g>
+            <!-- core -->
+            <rect x="130" y="130" width="60" height="60" rx="8" fill="#16161f" stroke="#5dff9f" stroke-width="2"/>
+            <circle cx="160" cy="160" r="6" fill="#5dff9f"/>
+            <!-- motors -->
+            <g fill="#16161f" stroke="#5dff9f" stroke-width="2">
+              <circle cx="60" cy="60" r="18" class="rotor r1"/>
+              <circle cx="260" cy="60" r="18" class="rotor r2"/>
+              <circle cx="60" cy="260" r="18" class="rotor r3"/>
+              <circle cx="260" cy="260" r="18" class="rotor r4"/>
+            </g>
+            <!-- props (linee crociate animate) -->
+            <g stroke="#5dff9f" stroke-width="1.5" stroke-linecap="round" opacity=".6">
+              <g class="prop p1" style="transform-origin: 60px 60px">
+                <line x1="38" y1="60" x2="82" y2="60"/>
+                <line x1="60" y1="38" x2="60" y2="82"/>
+              </g>
+              <g class="prop p2" style="transform-origin: 260px 60px">
+                <line x1="238" y1="60" x2="282" y2="60"/>
+                <line x1="260" y1="38" x2="260" y2="82"/>
+              </g>
+              <g class="prop p3" style="transform-origin: 60px 260px">
+                <line x1="38" y1="260" x2="82" y2="260"/>
+                <line x1="60" y1="238" x2="60" y2="282"/>
+              </g>
+              <g class="prop p4" style="transform-origin: 260px 260px">
+                <line x1="238" y1="260" x2="282" y2="260"/>
+                <line x1="260" y1="238" x2="260" y2="282"/>
+              </g>
+            </g>
+          </svg>
         </div>
       </div>
     </section>
 
-    <section class="latest">
-      <div class="sec-hd">
-        <div>
-          <div class="page-label">// ultimi progetti</div>
-          <h2>Recentemente pubblicati</h2>
+    <!-- ─────── COME FUNZIONA ─────── -->
+    <section class="how">
+      <div class="section-inner">
+        <div class="page-label">// come funziona</div>
+        <h2 class="section-title">Dal disegno al volo, in quattro passaggi.</h2>
+        <p class="section-sub">Il nostro network distribuito unisce designer, makerspace e centri di assemblaggio in tutta Italia.</p>
+
+        <div class="how-steps">
+          <div class="step-card" v-for="(s, i) in howSteps" :key="i">
+            <div class="step-num">0{{ i + 1 }}</div>
+            <div class="step-icon">{{ s.icon }}</div>
+            <h3>{{ s.title }}</h3>
+            <p>{{ s.desc }}</p>
+          </div>
         </div>
-        <router-link to="/projects" class="btn outline">Vedi tutti →</router-link>
       </div>
-      <p v-if="!projects.length" class="empty">Nessun progetto pubblicato ancora — sii il primo a caricare!</p>
-      <div v-else class="grid">
-        <ProjectCard v-for="p in projects" :key="p.id" :project="p" />
+    </section>
+
+    <!-- ─────── CATEGORIE ─────── -->
+    <section class="cats" v-if="categories.length">
+      <div class="section-inner">
+        <div class="page-label">// scegli una missione</div>
+        <h2 class="section-title">Per ogni esigenza, un drone.</h2>
+        <p class="section-sub">Filtra per tipo di volo: dalle gare FPV alle ispezioni industriali.</p>
+
+        <div class="cat-grid">
+          <router-link v-for="c in categories.slice(0, 12)" :key="c.id"
+            :to="`/projects?category=${c.id}`" class="cat-tile">
+            <div class="ct-icon">{{ c.icon || '📦' }}</div>
+            <div class="ct-name">{{ c.name }}</div>
+          </router-link>
+          <router-link to="/projects" class="cat-tile more">
+            <div class="ct-icon">→</div>
+            <div class="ct-name">Vedi tutto</div>
+          </router-link>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── CAROUSEL PROGETTI RECENTI ─────── -->
+    <section class="carousel-sec" v-if="projects.length">
+      <div class="section-inner">
+        <div class="sec-hd">
+          <div>
+            <div class="page-label">// ultimi caricati</div>
+            <h2 class="section-title">Progetti recenti</h2>
+          </div>
+          <div class="carousel-controls">
+            <button class="circ-btn" @click="scrollCarousel(-1)" aria-label="Indietro">‹</button>
+            <button class="circ-btn" @click="scrollCarousel(1)" aria-label="Avanti">›</button>
+            <router-link to="/projects" class="btn outline" style="margin-left:8px">Vedi tutti</router-link>
+          </div>
+        </div>
+
+        <div ref="carouselEl" class="carousel">
+          <div v-for="p in projects" :key="p.id" class="carousel-item">
+            <ProjectCard :project="p" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── PERCHE' OPENDRONE ─────── -->
+    <section class="why">
+      <div class="section-inner">
+        <div class="page-label">// perché opendrone</div>
+        <h2 class="section-title">Niente lock-in. Niente sovrapprezzi.</h2>
+
+        <div class="why-grid">
+          <div class="why-card">
+            <div class="why-icon"><span>⌬</span></div>
+            <h3>100% Open Hardware</h3>
+            <p>Tutti i progetti includono STL, BOM e schemi. Puoi stamparli, modificarli e forkarli.</p>
+          </div>
+          <div class="why-card">
+            <div class="why-icon"><span>€</span></div>
+            <h3>Prezzo onesto</h3>
+            <p>Paghi solo i materiali + il lavoro reale di chi stampa e assembla. Nessun marketing premium.</p>
+          </div>
+          <div class="why-card">
+            <div class="why-icon"><span>★</span></div>
+            <h3>Community-driven</h3>
+            <p>Designer indipendenti e makerspace italiani. Royalty trasparenti, recensioni reali.</p>
+          </div>
+          <div class="why-card">
+            <div class="why-icon"><span>⚡</span></div>
+            <h3>Validazione rapida</h3>
+            <p>Ogni progetto pubblicato passa controllo tecnico e di conformità EASA prima di andare online.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── CTA FINALE ─────── -->
+    <section class="cta">
+      <div class="cta-inner">
+        <h2>Pronto a volare?</h2>
+        <p>Registrati gratis. Ordina il tuo primo drone, oppure pubblica un progetto come designer.</p>
+        <div class="cta-buttons">
+          <router-link to="/register" class="btn-hero primary">Inizia ora →</router-link>
+          <router-link to="/projects" class="btn-hero outline">Sfoglia il catalogo</router-link>
+        </div>
       </div>
     </section>
   </div>
@@ -39,58 +202,403 @@ import { marketplaceApi } from '@/api/marketplace'
 import ProjectCard from '@/components/ProjectCard.vue'
 
 const projects = ref([])
+const categories = ref([])
 const stats = ref({ projects: 0, creators: 0 })
+const carouselEl = ref(null)
+
+const howSteps = [
+  { icon: '✎', title: 'Il designer pubblica', desc: 'Disegnatori indipendenti caricano il loro progetto open source: STL, BOM, schemi cablaggio.' },
+  { icon: '⬢', title: 'I nodi locali stampano', desc: 'Makerspace e fab-lab in tutta Italia stampano i pezzi in 3D, vicini a te.' },
+  { icon: '⚙', title: 'Centri assemblaggio', desc: 'Tecnici certificati assemblano elettronica, motori, software. Drone collaudato e pronto al volo.' },
+  { icon: '✈', title: 'Decolli', desc: 'Ricevi il drone già pronto, oppure scegli il kit DIY se preferisci montarlo tu.' },
+]
+
+function scrollCarousel(dir) {
+  const el = carouselEl.value
+  if (!el) return
+  const itemW = el.querySelector('.carousel-item')?.offsetWidth || 260
+  el.scrollBy({ left: dir * (itemW + 14) * 2, behavior: 'smooth' })
+}
 
 onMounted(async () => {
   try {
-    const { data } = await marketplaceApi.getProjects({ ordering: '-created_at', page_size: 6 })
-    projects.value = data.results || data
-    stats.value.projects = data.count ?? projects.value.length
+    const [projRes, catRes] = await Promise.all([
+      marketplaceApi.getProjects({ ordering: '-created_at', page_size: 12 }),
+      marketplaceApi.getCategories(),
+    ])
+    projects.value = projRes.data.results || projRes.data
+    stats.value.projects = projRes.data.count ?? projects.value.length
     const designers = new Set()
     projects.value.forEach(p => designers.add(p.designer_name))
     stats.value.creators = designers.size
-  } catch {}
+
+    categories.value = catRes.data.results || catRes.data
+  } catch (e) {
+    console.error('[Home] errore caricamento dati:', e)
+  }
 })
 </script>
 
 <style scoped>
-.hero-band {
-  padding: 56px 24px 40px;
-  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(93,255,159,.07) 0%, transparent 70%);
+.home { display: flex; flex-direction: column; }
+
+/* ───────── HERO ───────── */
+.hero {
+  position: relative;
+  padding: 80px 24px 90px;
+  overflow: hidden;
   border-bottom: 1px solid var(--border);
+  isolation: isolate;
 }
-.hero-inner { max-width: 900px; margin: 0 auto; }
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 0%, rgba(93,255,159,.10) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 90% 90%, rgba(255,107,53,.06) 0%, transparent 60%);
+  z-index: -2;
+}
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(93,255,159,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(93,255,159,.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 40%, black 30%, transparent 80%);
+  z-index: -1;
+}
+.hero-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
 .hero-label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--accent);
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
-h1 {
-  font-size: clamp(28px, 5vw, 46px);
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 5.5vw, 60px);
   font-weight: 800;
-  letter-spacing: -1.5px;
-  line-height: 1.05;
-  max-width: 520px;
+  letter-spacing: -2px;
+  line-height: 1.02;
+  margin-bottom: 18px;
 }
-h1 em { font-style: normal; color: var(--accent); }
-.hero-band p {
+.hero-title em {
+  font-style: normal;
+  color: var(--accent);
+  position: relative;
+}
+.hero-title em::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -2px;
+  height: 3px;
+  background: var(--accent);
+  opacity: .35;
+}
+.hero-sub {
   color: var(--muted);
-  margin-top: 14px;
-  font-size: 14px;
-  max-width: 440px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 520px;
+  margin-bottom: 28px;
 }
-.hero-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
-.hero-stats { display: flex; gap: 36px; margin-top: 28px; }
-.hs-num { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
-.hs-lbl { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+.hero-sub strong { color: var(--text); font-weight: 600; }
 
-.latest { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; width: 100%; }
-.sec-hd { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
-.sec-hd h2 { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
-.empty { color: var(--muted); font-family: var(--mono); font-size: 13px; padding: 24px 0; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
+.btn-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all .2s;
+  text-decoration: none;
+}
+.btn-hero.primary {
+  background: var(--accent);
+  color: #060f0a;
+  box-shadow: 0 8px 32px rgba(93,255,159,.18);
+}
+.btn-hero.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(93,255,159,.28);
+}
+.btn-hero.primary .arr { transition: transform .2s; }
+.btn-hero.primary:hover .arr { transform: translateX(4px); }
+.btn-hero.outline {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-hero.outline:hover { border-color: var(--accent); color: var(--accent); }
+
+.hero-stats { display: flex; gap: 44px; }
+.stat .sn {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.stat .sn.accent2 { color: var(--accent2); }
+.stat .sl {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+/* drone SVG */
+.hero-visual { display: flex; justify-content: center; }
+.drone-svg { width: 100%; max-width: 360px; height: auto; }
+.rotor { animation: pulse 3s ease-in-out infinite; }
+.rotor.r2 { animation-delay: .25s; }
+.rotor.r3 { animation-delay: .5s; }
+.rotor.r4 { animation-delay: .75s; }
+.prop { animation: spin 1.4s linear infinite; transform-box: fill-box; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ───────── SEZIONI COMUNI ───────── */
+.section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 80px 24px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.5vw, 36px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+.section-sub {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 560px;
+  margin-bottom: 40px;
+}
+
+/* ───────── COME FUNZIONA ───────── */
+.how { background: var(--surface); border-bottom: 1px solid var(--border); }
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.step-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 22px;
+  transition: border-color .2s, transform .2s;
+}
+.step-card:hover { border-color: rgba(93,255,159,.35); transform: translateY(-2px); }
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+}
+.step-icon { font-size: 28px; margin: 14px 0 10px; line-height: 1; }
+.step-card h3 { font-size: 16px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 8px; }
+.step-card p { color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+/* ───────── CATEGORIE ───────── */
+.cats { border-bottom: 1px solid var(--border); }
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.cat-tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.cat-tile:hover {
+  border-color: var(--accent);
+  background: rgba(93,255,159,.04);
+  transform: translateY(-2px);
+}
+.cat-tile.more {
+  background: none;
+  border-style: dashed;
+  color: var(--muted);
+}
+.cat-tile.more:hover { color: var(--accent); }
+.ct-icon { font-size: 28px; line-height: 1; }
+.ct-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+  line-height: 1.3;
+}
+
+/* ───────── CAROUSEL ───────── */
+.carousel-sec { background: var(--surface); border-bottom: 1px solid var(--border); }
+.sec-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.sec-hd .page-label { margin-bottom: 6px; }
+.carousel-controls { display: flex; gap: 8px; align-items: center; }
+.circ-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  line-height: 1;
+}
+.circ-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.carousel {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px 4px 18px;
+  margin: 0 -4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.carousel::-webkit-scrollbar { height: 6px; }
+.carousel::-webkit-scrollbar-track { background: transparent; }
+.carousel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.carousel-item {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+}
+
+/* ───────── PERCHÉ ───────── */
+.why { border-bottom: 1px solid var(--border); }
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.why-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px 22px;
+  transition: border-color .2s;
+}
+.why-card:hover { border-color: rgba(93,255,159,.35); }
+.why-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(93,255,159,.08);
+  border: 1px solid rgba(93,255,159,.25);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+.why-card h3 {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  margin-bottom: 8px;
+}
+.why-card p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+/* ───────── CTA FINALE ───────── */
+.cta {
+  background: linear-gradient(180deg, transparent 0%, rgba(93,255,159,.04) 100%);
+  padding: 100px 24px 120px;
+  text-align: center;
+}
+.cta-inner { max-width: 640px; margin: 0 auto; }
+.cta h2 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4.5vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+.cta p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.cta-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ───────── RESPONSIVE ───────── */
+@media (max-width: 880px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 28px; }
+  .hero-visual { order: -1; max-width: 280px; margin: 0 auto; }
+  .drone-svg { max-width: 240px; }
+  .hero { padding: 48px 24px 64px; }
+  .how-steps { grid-template-columns: repeat(2, 1fr); }
+  .hero-stats { gap: 28px; }
+  .stat .sn { font-size: 24px; }
+  .section-inner { padding: 56px 24px; }
+}
+@media (max-width: 480px) {
+  .how-steps { grid-template-columns: 1fr; }
+  .hero-stats { gap: 22px; }
+  .carousel-item { flex: 0 0 240px; }
+}
 </style>
