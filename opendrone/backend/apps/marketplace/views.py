@@ -198,10 +198,15 @@ class ProjectReviewsView(generics.ListCreateAPIView):
             project.save()
 
 
-class CategoryListView(generics.ListAPIView):
-    queryset = DroneCategory.objects.all()
+class CategoryListView(generics.ListCreateAPIView):
+    queryset = DroneCategory.objects.all().order_by('name')
     serializer_class = DroneCategorySerializer
-    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
 
 class BrandListView(generics.ListAPIView):

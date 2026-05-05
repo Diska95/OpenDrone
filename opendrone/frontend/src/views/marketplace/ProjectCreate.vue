@@ -42,6 +42,20 @@
             <option :value="null">— scegli —</option>
             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.icon }} {{ c.name }}</option>
           </select>
+          <button v-if="!showNewCat" type="button" class="link-btn" @click="showNewCat = true">+ Nuova categoria</button>
+          <div v-else class="new-cat-form">
+            <div class="ncf-row">
+              <input class="input ncf-icon" v-model="newCat.icon" placeholder="📦" maxlength="4" />
+              <input class="input ncf-name" v-model="newCat.name" placeholder="Nome categoria" maxlength="100" @keydown.enter.prevent="createCategory" />
+            </div>
+            <div v-if="newCatError" class="alert danger" style="margin-top:6px; font-size:11px; padding:4px 8px">{{ newCatError }}</div>
+            <div class="ncf-actions">
+              <button type="button" class="btn-tiny" @click="cancelNewCat">Annulla</button>
+              <button type="button" class="btn-tiny primary" :disabled="creatingCat" @click="createCategory">
+                {{ creatingCat ? '…' : 'Crea' }}
+              </button>
+            </div>
+          </div>
         </div>
         <div class="field">
           <label>Difficoltà</label>
@@ -458,6 +472,10 @@ const CATEGORIES = [
 ]
 
 const categories = ref([])  // categorie progetto (uso del drone)
+const showNewCat = ref(false)
+const creatingCat = ref(false)
+const newCatError = ref('')
+const newCat = ref({ name: '', icon: '' })
 const error = ref('')
 const formError = ref('')
 const publishError = ref('')
@@ -845,6 +863,41 @@ async function loadCategories() {
   }
 }
 
+function cancelNewCat() {
+  showNewCat.value = false
+  newCat.value = { name: '', icon: '' }
+  newCatError.value = ''
+}
+
+async function createCategory() {
+  const name = newCat.value.name.trim()
+  if (name.length < 2) {
+    newCatError.value = 'Nome troppo corto'
+    return
+  }
+  if (categories.value.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+    newCatError.value = 'Categoria già esistente'
+    return
+  }
+  newCatError.value = ''
+  creatingCat.value = true
+  try {
+    const { data } = await marketplaceApi.createCategory({
+      name,
+      icon: newCat.value.icon.trim() || '📦',
+    })
+    categories.value.push(data)
+    categories.value.sort((a, b) => a.name.localeCompare(b.name))
+    form.value.category = data.id
+    cancelNewCat()
+    toast.show(`✓ Categoria "${data.name}" creata`)
+  } catch (e) {
+    newCatError.value = formatErr(e) || 'Errore creazione categoria'
+  } finally {
+    creatingCat.value = false
+  }
+}
+
 async function loadProjectForEdit(slug) {
   if (!slug) return
   loadingProject.value = true
@@ -889,6 +942,32 @@ onMounted(async () => {
 
 <style scoped>
 .sub { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  margin-top: 6px;
+  cursor: pointer;
+  padding: 0;
+}
+.link-btn:hover { text-decoration: underline; }
+
+.new-cat-form {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid rgba(93,255,159,.2);
+  border-radius: 8px;
+}
+.ncf-row { display: grid; grid-template-columns: 60px 1fr; gap: 6px; }
+.ncf-icon { text-align: center; font-size: 16px; }
+.ncf-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+.btn-tiny.primary { background: var(--accent); color: #060f0a; border-color: var(--accent); font-weight: 700; }
+.btn-tiny.primary:hover { opacity: .9; }
+.btn-tiny.primary:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── stepbar ── */
 .stepbar { display: flex; align-items: center; gap: 8px; margin-bottom: 22px; }

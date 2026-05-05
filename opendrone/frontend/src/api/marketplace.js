@@ -12,6 +12,7 @@ export const marketplaceApi = {
   forkProject: (slug) => client.post(`/projects/${slug}/fork/`),
   getMyProjects: () => client.get('/projects/my/'),
   getCategories: () => client.get('/projects/categories/'),
+  createCategory: (data) => client.post('/projects/categories/', data),
   getBrands: (category) => client.get('/projects/brands/', { params: category ? { category } : {} }),
   uploadFile: (slug, formData) => client.post(`/projects/${slug}/files/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }

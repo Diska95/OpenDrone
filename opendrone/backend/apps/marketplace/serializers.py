@@ -13,7 +13,32 @@ class BrandSerializer(serializers.ModelSerializer):
 class DroneCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = DroneCategory
-        fields = '__all__'
+        fields = ['id', 'name', 'slug', 'icon', 'description']
+        extra_kwargs = {
+            'slug': {'required': False, 'allow_blank': True},
+            'description': {'required': False, 'allow_blank': True},
+            'icon': {'required': False, 'allow_blank': True},
+        }
+
+    def validate_name(self, value):
+        value = value.strip()
+        if len(value) < 2:
+            raise serializers.ValidationError('Nome troppo corto.')
+        if len(value) > 100:
+            raise serializers.ValidationError('Nome troppo lungo (max 100).')
+        return value
+
+    def create(self, validated_data):
+        from django.utils.text import slugify
+        name = validated_data['name']
+        base_slug = slugify(name) or 'cat'
+        slug = base_slug
+        n = 1
+        while DroneCategory.objects.filter(slug=slug).exists():
+            slug = f'{base_slug}-{n}'
+            n += 1
+        validated_data['slug'] = slug
+        return super().create(validated_data)
 
 
 class ProjectFileSerializer(serializers.ModelSerializer):
