@@ -92,6 +92,20 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    # Throttling: usa cache backend (Redis in prod, locmem in dev).
+    # Le rate sotto sono per IP (anon) o per user (login).
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '120/min',         # default per endpoint anonimi non scoped
+        'user': '600/min',         # default per endpoint autenticati
+        'login': '5/min',          # POST /api/auth/login/
+        'register': '3/min',       # POST /api/auth/register/
+        'google_auth': '10/min',   # POST /api/auth/google/
+        'password_reset': '3/min', # quando aggiungeremo il flusso (A6)
+    },
 }
 
 SIMPLE_JWT = {

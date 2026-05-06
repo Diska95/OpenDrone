@@ -1,8 +1,9 @@
 import logging
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle, AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -17,9 +18,24 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
+# Throttle classi nominate per scope: gli scope (login/register/google_auth)
+# leggono i rate da REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] in settings.
+class LoginThrottle(ScopedRateThrottle):
+    scope = 'login'
+
+
+class RegisterThrottle(ScopedRateThrottle):
+    scope = 'register'
+
+
+class GoogleAuthThrottle(ScopedRateThrottle):
+    scope = 'google_auth'
+
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [AllowAny]
+    throttle_classes = [RegisterThrottle, AnonRateThrottle]
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
@@ -36,6 +52,7 @@ class RegisterView(generics.CreateAPIView):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([LoginThrottle, AnonRateThrottle])
 def login_view(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -55,6 +72,7 @@ VALID_SIGNUP_ROLES = {'designer', 'print_node', 'assembly_center', 'customer'}
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([GoogleAuthThrottle, AnonRateThrottle])
 def google_auth_view(request):
     """Login/registrazione con Google Identity Services.
 
@@ -153,11 +171,18 @@ def google_auth_view(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
+    refresh_value = request.data.get('refresh')
+    if not refresh_value:
+        return Response(
+            {'detail': 'Refresh token mancante.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     try:
-        token = RefreshToken(request.data.get('refresh'))
-        token.blacklist()
-    except Exception:
-        pass
+        RefreshToken(refresh_value).blacklist()
+    except Exception as exc:
+        # Token gia' blacklisted o malformato: loggalo, ma rispondi 200 cosi'
+        # il client puo' completare la pulizia locale (idempotente).
+        logger.warning('logout: blacklist fallita per user %s: %s', request.user.id, exc)
     return Response({'detail': 'Logout effettuato.'})
 
 
@@ -179,7 +204,23 @@ def change_password_view(request):
         return Response({'old_password': 'Password errata.'}, status=400)
     user.set_password(serializer.validated_data['new_password'])
     user.save()
-    return Response({'detail': 'Password aggiornata.'})
+
+    # Invalida tutti i refresh token attivi dell'utente: il device corrente
+    # riceve i nuovi token nel payload di risposta; gli altri device vengono
+    # disconnessi al prossimo refresh (entro ACCESS_TOKEN_LIFETIME = 60 min).
+    try:
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+        for outstanding in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=outstanding)
+    except Exception as exc:
+        logger.warning('change_password: blacklist refresh tokens fallito per %s: %s', user.id, exc)
+
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'detail': 'Password aggiornata. Le altre sessioni sono state disconnesse.',
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+    })
 
 
 class PrintNodeProfileView(generics.RetrieveUpdateAPIView):
