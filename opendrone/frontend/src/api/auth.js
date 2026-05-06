@@ -8,4 +8,8 @@ export const authApi = {
   getMe: () => client.get('/auth/me/'),
   updateMe: (data) => client.patch('/auth/me/', data),
   changePassword: (data) => client.post('/auth/me/password/', data),
+  // GDPR — diritti dell'interessato (art. 15-17 + 20)
+  exportMyData: () => client.get('/auth/me/data-export/'),
+  deleteAccount: ({ password, confirmation }) =>
+    client.post('/auth/me/delete/', { password, confirmation }),
 }
