@@ -3,7 +3,7 @@ from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle, AnonRateThrottle
+from rest_framework.throttling import SimpleRateThrottle, AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -20,18 +20,30 @@ from .services import export_user_data, anonymize_account
 logger = logging.getLogger(__name__)
 
 
-# Throttle classi nominate per scope: gli scope (login/register/google_auth)
-# leggono i rate da REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] in settings.
-class LoginThrottle(ScopedRateThrottle):
+# Throttle classi per scope nominati. Estendono SimpleRateThrottle (NON
+# ScopedRateThrottle: quest'ultima ignora self.scope e legge view.throttle_scope,
+# che su function-based @api_view non viene letto correttamente). Le classi
+# qui sotto leggono il rate da REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] usando
+# il proprio attributo `scope`.
+class LoginThrottle(SimpleRateThrottle):
     scope = 'login'
 
+    def get_cache_key(self, request, view):
+        return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
 
-class RegisterThrottle(ScopedRateThrottle):
+
+class RegisterThrottle(SimpleRateThrottle):
     scope = 'register'
 
+    def get_cache_key(self, request, view):
+        return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
 
-class GoogleAuthThrottle(ScopedRateThrottle):
+
+class GoogleAuthThrottle(SimpleRateThrottle):
     scope = 'google_auth'
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
 
 
 class RegisterView(generics.CreateAPIView):
