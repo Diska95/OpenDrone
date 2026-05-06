@@ -249,7 +249,52 @@ Vedi audit B1. Eliminerebbe necessità di consenso per font. Faccio fare in task
 
 ---
 
-### 19. Pubblicare un security.txt
+### 19. Block `/admin/` Django via IP allowlist nginx (mentre siamo in HTTP)
+
+**Perché:** audit A2 — l'admin Django (`/admin/`) è raggiungibile in HTTP plain. Un attaccante che intercetti la connessione vede in chiaro il session cookie admin → takeover totale (read/write su tutti i dati personali via Django admin).
+
+**Cosa fare:** in `opendrone/nginx/opendrone.conf` c'è già lo snippet **commentato** pronto. Decommentalo e sostituisci `<IP-CASA>` con il tuo IP pubblico attuale (vedi su https://ifconfig.me oppure `curl ifconfig.me` da un terminal):
+
+```nginx
+location /admin/ {
+    allow 1.2.3.4;          # <-- il tuo IP pubblico
+    deny all;
+    proxy_pass http://backend:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+Poi `docker compose -f opendrone/docker-compose.prod.yml restart nginx` sull'EC2.
+
+**Avvertenze:**
+- Se cambi rete (uffici, viaggi, mobile) l'IP cambia → ti chiudi fuori dall'admin. Soluzione: aggiungere multipli `allow X.Y.Z.W;` per i tuoi IP più frequenti, o usare una VPN con IP statico.
+- Quando avrai HTTPS + dominio, integra invece **2FA admin** con `django-otp` (più robusto della IP allowlist).
+
+**Stima:** 5 minuti.
+
+---
+
+### 20. Lazy-load script Google Sign-In solo su click (riduce trasferimento dati a Google)
+
+**Perché:** audit B2 — oggi `useGoogleSignIn.js:loadGoogleScript()` viene chiamato in `onMounted` su `Login.vue` e `Register.vue`. Significa che ogni volta che l'utente apre la pagina di login/registrazione, il browser fa una request DNS+TLS+download a `accounts.google.com/gsi/client` — invio del suo IP a Google **anche se non clicca mai sul bottone Google**. Tema GDPR (sentenza Garante DE su Google Fonts 2022 ha creato precedente analogo).
+
+**Cosa fare:** refactor di `frontend/src/composables/useGoogleSignIn.js` + `Login.vue` + `Register.vue`:
+- Mostrare un bottone "placeholder" custom "Continua con Google" prima del caricamento dello script
+- Al click sul placeholder, chiamare `loadGoogleScript()` + `google.accounts.id.prompt()` (One Tap) o renderizzare il bottone vero
+- Niente caricamento al mount
+
+**Verifica post-fix** (DevTools del browser → Network):
+- All'apertura di `/login`: nessuna chiamata a `accounts.google.com`
+- Dopo click sul nostro bottone Google: caricamento lazy + bottone Google reale che fa il login
+
+**Stima:** 15-20 minuti. Va abbinato al task #7 (cookie banner) ma può essere fatto anche prima — è strettamente migliorativo.
+
+---
+
+### 21. Pubblicare un security.txt
 Standard RFC 9116. File `https://tuodominio.it/.well-known/security.txt` con email per security disclosure responsabile. Esempio:
 ```
 Contact: mailto:security@tuodominio.it
