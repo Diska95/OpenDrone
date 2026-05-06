@@ -13,7 +13,12 @@ from .pricing import calculate_order_price, find_best_print_node
 from apps.marketplace.models import DroneProject
 
 logger = logging.getLogger(__name__)
-stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+def _stripe():
+    """Inizializza la api key al call-time (vedi apps.payments.views._stripe)."""
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    return stripe
 
 
 class OrderListView(generics.ListAPIView):
@@ -83,7 +88,7 @@ def create_order(request):
 
     if settings.STRIPE_SECRET_KEY and not settings.STRIPE_SECRET_KEY.endswith('xxx'):
         try:
-            intent = stripe.PaymentIntent.create(
+            intent = _stripe().PaymentIntent.create(
                 amount=int(order.total_amount * 100),
                 currency='eur',
                 metadata={'order_id': str(order.id)},

@@ -12,7 +12,23 @@ from .models import RoyaltyLedger, Subscription
 from apps.orders.models import Order, OrderStatusHistory
 
 logger = logging.getLogger(__name__)
-stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+def _stripe():
+    """Inizializza la api key al call-time invece che al module-load.
+    Permette key rotation senza restart e niente fail se settings non pronto."""
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    return stripe
+
+
+def _stripe_secret_configured():
+    sk = settings.STRIPE_SECRET_KEY or ''
+    return bool(sk) and not sk.endswith('xxx')
+
+
+def _stripe_webhook_secret_configured():
+    ws = settings.STRIPE_WEBHOOK_SECRET or ''
+    return bool(ws) and not ws.endswith('xxx')
 
 PLAN_PRICES = {
     'creator_monthly': {'amount': Decimal('49.00'), 'plan': 'creator', 'cycle': 'monthly'},
@@ -27,17 +43,26 @@ class StripeWebhookView(APIView):
     authentication_classes = []
 
     def post(self, request):
+        if not _stripe_webhook_secret_configured():
+            logger.error(
+                'Stripe webhook ricevuto ma STRIPE_WEBHOOK_SECRET non configurato. '
+                'Endpoint disabilitato per sicurezza.'
+            )
+            return Response({'detail': 'Webhook non configurato.'}, status=503)
+
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
 
-        if settings.STRIPE_WEBHOOK_SECRET and not settings.STRIPE_WEBHOOK_SECRET.endswith('xxx'):
-            try:
-                event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
-            except (ValueError, stripe.error.SignatureVerificationError):
-                return Response(status=400)
-        else:
-            import json
-            event = json.loads(payload)
+        try:
+            event = _stripe().Webhook.construct_event(
+                payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+            )
+        except ValueError:
+            logger.warning('Stripe webhook payload malformato.')
+            return Response(status=400)
+        except stripe.error.SignatureVerificationError:
+            logger.warning('Stripe webhook signature non valida.')
+            return Response(status=400)
 
         handlers = {
             'payment_intent.succeeded': self._handle_payment_succeeded,
@@ -71,7 +96,7 @@ class StripeWebhookView(APIView):
         if designer.stripe_account_id and order.design_fee > 0:
             net = order.design_fee * Decimal('0.975')
             try:
-                t = stripe.Transfer.create(
+                t = _stripe().Transfer.create(
                     amount=int(net * 100),
                     currency='eur',
                     destination=designer.stripe_account_id,
@@ -91,7 +116,7 @@ class StripeWebhookView(APIView):
 
         if order.print_node and order.print_node.stripe_account_id and order.print_cost > 0:
             try:
-                t = stripe.Transfer.create(
+                t = _stripe().Transfer.create(
                     amount=int(order.print_cost * 100),
                     currency='eur',
                     destination=order.print_node.stripe_account_id,
@@ -103,7 +128,7 @@ class StripeWebhookView(APIView):
 
         if order.assembly_center and order.assembly_center.stripe_account_id and order.assembly_cost > 0:
             try:
-                t = stripe.Transfer.create(
+                t = _stripe().Transfer.create(
                     amount=int(order.assembly_cost * 100),
                     currency='eur',
                     destination=order.assembly_center.stripe_account_id,
@@ -162,20 +187,19 @@ def subscription_plans(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def subscribe(request):
-    plan_id = request.data.get('plan_id')
-    plan = PLAN_PRICES.get(plan_id)
-    if not plan:
-        return Response({'detail': 'Piano non valido.'}, status=400)
-
-    sub = Subscription.objects.create(
-        user=request.user,
-        plan_type=plan['plan'],
-        billing_cycle=plan['cycle'],
-        amount_eur=plan['amount'],
-        status='active',
-        current_period_start=timezone.now(),
+    # SECURITY: stub disabilitato. La versione precedente creava una
+    # Subscription(status='active') senza alcun pagamento Stripe — qualunque
+    # utente autenticato poteva auto-attivarsi un piano. La rotta resta
+    # esposta per non rompere chiamate frontend, ma risponde 503 finché
+    # non viene wired Stripe Checkout / Stripe Subscription propriamente.
+    logger.warning(
+        'subscribe() chiamato da user_id=%s — endpoint disabilitato per security fix.',
+        request.user.id,
     )
-    return Response({'detail': 'Abbonamento attivato.', 'subscription_id': sub.id})
+    return Response(
+        {'detail': 'Abbonamenti non ancora disponibili. Contatta il supporto.'},
+        status=503,
+    )
 
 
 @api_view(['GET'])
