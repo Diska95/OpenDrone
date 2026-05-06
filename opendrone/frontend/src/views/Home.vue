@@ -92,14 +92,6 @@
               </g>
             </g>
 
-            <!-- eliche: 2 lame dritte per motore, attaccate al motore, perno = centro motore.
-                 Ogni lama lunga 36 (= 2 x raggio motore), ruota dal centro motore. -->
-            <g stroke="#5dff9f" stroke-width="3" stroke-linecap="round" opacity=".75">
-              <line class="prop" x1="44"  y1="80"  x2="116" y2="80"  style="transform-origin: 80px 80px"/>
-              <line class="prop" x1="204" y1="80"  x2="276" y2="80"  style="transform-origin: 240px 80px"/>
-              <line class="prop" x1="204" y1="240" x2="276" y2="240" style="transform-origin: 240px 240px"/>
-              <line class="prop" x1="44"  y1="240" x2="116" y2="240" style="transform-origin: 80px 240px"/>
-            </g>
           </svg>
         </div>
       </div>
@@ -426,14 +418,6 @@ onMounted(async () => {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-
-/* Eliche: spin abbastanza veloce da sembrare in volo, abbastanza lento da
-   essere riconoscibili come 2 lame opposte */
-.prop {
-  animation: spin .55s linear infinite;
-  transform-box: fill-box;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Backflip: rotateX 360 + leggero "pop" verticale per far sentire il salto */
 @keyframes backflip {
