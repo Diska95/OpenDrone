@@ -16,6 +16,15 @@ SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 CSRF_TRUSTED_ORIGINS = [o for o in config('CSRF_TRUSTED_ORIGINS', default='').split(',') if o]
 
+# Hardening header HTTP — validi anche in HTTP plain, niente regression risk.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+X_FRAME_OPTIONS = 'DENY'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # Django legge cookie CSRF da JS quando serve
+CSRF_COOKIE_SAMESITE = 'Lax'
+
 # ─── DATABASE (RDS PostgreSQL) ────────────────────────────────────
 DATABASES = {
     'default': {
