@@ -6,6 +6,7 @@ backend/.env.local
 .env.*
 !.env.example
 !backend/.env.example
+!backend/.env.production.example
 
 # ─── Python ───────────────────────────────────────────────────────
 __pycache__/
