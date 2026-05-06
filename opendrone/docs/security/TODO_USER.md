@@ -232,7 +232,24 @@
 ### 17. Self-host Google Fonts
 Vedi audit B1. Eliminerebbe necessità di consenso per font. Faccio fare in task #7 (cookie banner).
 
-### 18. Pubblicare un security.txt
+### 18. Migliorare UX dell'export dati GDPR (ZIP con HTML + JSON)
+
+**Perché:** oggi l'export dati personali (`/profile` → "Scarica i miei dati") restituisce un singolo file JSON. È **legalmente conforme** (art. 20 GDPR richiede "formato strutturato di uso comune leggibile da dispositivo automatico" → JSON ✓), ma poco user-friendly per clienti non tecnici.
+
+**Pattern industria** (Google Takeout, Meta, Twitter): ZIP contenente:
+- `index.html` umano-leggibile in italiano con tabelle: Account, Profili, Ordini effettuati, Recensioni, Royalty, ecc. — ogni sezione con titolo descrittivo invece dei nomi tecnici
+- `data.json` con il dump completo (per portabilità tra servizi)
+- `README.txt` con spiegazione di cosa c'è dentro
+
+**Cosa fare:** modificare `apps/users/services.py:export_user_data` per restituire un buffer ZIP + adattare `data_export_view` con `Content-Type: application/zip`. Stima: ~30-45 min.
+
+**Quando:** raccomandato quando avrai i primi customer reali non-tecnici. Per utenti tecnici (designer, print_node, assembly_center) il JSON attuale va già bene.
+
+**Riferimento:** sessione audit 2026-05-06, conversazione post-deploy.
+
+---
+
+### 19. Pubblicare un security.txt
 Standard RFC 9116. File `https://tuodominio.it/.well-known/security.txt` con email per security disclosure responsabile. Esempio:
 ```
 Contact: mailto:security@tuodominio.it
