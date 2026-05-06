@@ -1,7 +1,7 @@
 # Stato sessione audit sicurezza + GDPR
 
-**Ultima sessione:** 2026-05-06
-**Status:** Pausa per gestione budget token. Riprendere quando opportuno.
+**Ultima sessione:** 2026-05-06 (parte 2: aggiunto branch `gdpr-compliance-rights`)
+**Status:** Pausa per gestione budget token. Restano 2 task pending (#5 e #7).
 
 ---
 
@@ -69,6 +69,8 @@ docker compose -f opendrone/docker-compose.prod.yml logs -f backend --tail=50
 
 ## ⏳ Cosa rimane da fare
 
+> ✅ **Task #8 completato** nella parte 2 della sessione: branch locale `gdpr-compliance-rights` creato con 1 commit (`d494c44`). Vedi sotto §"Branch pending da mergiare".
+
 ### Task #5 — Branch `security-audit` (fix invasivi)
 **Stima:** ~45-60 min lavoro modello.
 **Niente migration DB.**
@@ -100,18 +102,31 @@ Da implementare:
 
 **Cosa cambia per l'utente**: MOLTO visibile. Banner all'apertura, footer, 3 nuove pagine, checkbox in registrazione.
 
-### Task #8 — Branch `gdpr-compliance-rights` (export + delete account)
-**Stima:** ~45 min.
-**Richiede 1 migration DB minima** (eventuale flag `_account_deleted` su User per soft-delete pseudonimizzato).
+### Task #8 ✅ COMPLETATO — Branch locale `gdpr-compliance-rights`
 
-Da implementare:
-- Endpoint `GET /api/auth/me/data-export/` → JSON con tutti i dati utente (User, profili, ordini, royalty, recensioni, file URL S3 presigned)
-- Endpoint `DELETE /api/auth/me/` → richiede password conferma + invia email warning + soft-delete con anonimizzazione (mette `customer=NULL` su ordini, anonimizza recensioni, hard-delete profilo + avatar + bio + file caricati orfani)
-- Service `apps/users/services.py:anonymize_user(user)` con la logica
-- UI in `views/profile/Profile.vue` → sezione "Privacy e dati" con bottoni "Scarica i miei dati" + "Cancella account"
-- Conferma a doppio passaggio per il delete (digita "ELIMINA" + password)
+Branch già creato e committato (1 commit, `d494c44`). **Nessuna migration DB**: usa `is_active=False` come flag soft-delete + pseudonimizzazione in-place.
 
-**Cosa cambia per l'utente**: visibile nella pagina Profilo (nuova sezione "Privacy").
+Cosa contiene il branch:
+- `apps/users/services.py` (nuovo): `export_user_data(user)` + `anonymize_account(user)`
+- `apps/users/views.py`: `data_export_view` (GET `/api/auth/me/data-export/`) + `delete_account_view` (POST `/api/auth/me/delete/`)
+- `apps/users/serializers.py`: `DeleteAccountSerializer` con validazione `confirmation == "ELIMINA"`
+- `apps/users/urls.py`: 2 nuove rotte
+- `frontend/src/api/auth.js`: `exportMyData()` + `deleteAccount({password, confirmation})`
+- `frontend/src/views/profile/Profile.vue`: nuova sezione "Privacy e dati personali" con bottone download JSON + modal conferma cancellazione (doppio check: password attuale + digitare "ELIMINA")
+
+Da fare per metterlo in prod (azione utente):
+```bash
+git checkout main
+git merge gdpr-compliance-rights
+# nessun migrate da lanciare (zero migration DB)
+git push (quando vuoi)
+# poi deploy come per main
+```
+
+**Cosa cambia per l'utente finale dopo il merge:**
+- Pagina `/profile` ha nuova sezione "Privacy e dati personali"
+- Click su "Scarica i miei dati" → download di un file JSON con account, profili, ordini, recensioni, royalty, abbonamenti, ultime 200 notifiche
+- Click su "Cancella il mio account" → modal con doppia conferma (password + "ELIMINA"). Esegue: blacklist refresh tokens, hard-delete avatar S3, hard-delete profili business, blank recensioni (per integrità rating), pseudonimizza User in-place. Ordini e royalty restano collegati per obblighi contabili 10 anni.
 
 ---
 
