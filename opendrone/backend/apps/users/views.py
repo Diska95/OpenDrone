@@ -12,8 +12,10 @@ from django.db import transaction
 from .models import User, PrintNodeProfile, AssemblyCenterProfile, DesignerProfile
 from .serializers import (
     RegisterSerializer, UserSerializer, ChangePasswordSerializer,
-    PrintNodeProfileSerializer, AssemblyCenterProfileSerializer, DesignerProfileSerializer
+    PrintNodeProfileSerializer, AssemblyCenterProfileSerializer, DesignerProfileSerializer,
+    DeleteAccountSerializer,
 )
+from .services import export_user_data, anonymize_account
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +222,55 @@ def change_password_view(request):
         'detail': 'Password aggiornata. Le altre sessioni sono state disconnesse.',
         'access': str(refresh.access_token),
         'refresh': str(refresh),
+    })
+
+
+# ─── GDPR — diritti dell'interessato ──────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def data_export_view(request):
+    """Art. 15 GDPR (accesso) + art. 20 (portabilita').
+
+    Ritorna in JSON tutti i dati personali riferibili all'utente.
+    Il frontend lo offre come download.
+    """
+    data = export_user_data(request.user)
+    response = Response(data)
+    response['Content-Disposition'] = (
+        f'attachment; filename="opendrone-data-export-{request.user.id}.json"'
+    )
+    return response
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def delete_account_view(request):
+    """Art. 17 GDPR (oblio). Richiede:
+
+    - password corrente per conferma identita'
+    - confirmation = "ELIMINA" (anti click-accidentale)
+
+    Esegue anonimizzazione in-place (vedi services.anonymize_account):
+    profili business cancellati, recensioni blanked, User pseudonimizzato,
+    refresh tokens blacklisted. Ordini/royalty restano per obblighi contabili.
+    """
+    serializer = DeleteAccountSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    user = request.user
+    if not user.check_password(serializer.validated_data['password']):
+        logger.warning('delete_account: password errata user=%s', user.id)
+        return Response({'password': 'Password errata.'}, status=400)
+
+    summary = anonymize_account(user)
+    return Response({
+        'detail': (
+            'Account cancellato. I tuoi dati personali sono stati rimossi o '
+            'pseudonimizzati. Per obblighi contabili manteniamo gli ordini '
+            'storici in forma non attribuibile.'
+        ),
+        'summary': summary,
     })
 
 

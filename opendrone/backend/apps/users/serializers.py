@@ -98,3 +98,20 @@ class UserSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, validators=[validate_password])
+
+
+class DeleteAccountSerializer(serializers.Serializer):
+    """Conferma cancellazione account (art. 17 GDPR).
+
+    `confirmation` deve essere esattamente "ELIMINA" per evitare click
+    accidentali. Localizzato all'italiano coerentemente con la UI.
+    """
+    password = serializers.CharField(required=True, write_only=True)
+    confirmation = serializers.CharField(required=True)
+
+    def validate_confirmation(self, value):
+        if value.strip().upper() != 'ELIMINA':
+            raise serializers.ValidationError(
+                'Per confermare digita esattamente "ELIMINA".'
+            )
+        return value
