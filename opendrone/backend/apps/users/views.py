@@ -139,10 +139,8 @@ def google_auth_view(request):
                 is_verified=True,
             )
             user.set_unusable_password()
-            roles = [role]
-            if 'customer' not in roles:
-                roles.append('customer')
-            user.roles = roles
+            # Vincolo: un solo ruolo per utente.
+            user.roles = [role]
             user.save()
             if role == 'designer':
                 DesignerProfile.objects.create(user=user)
@@ -341,10 +339,20 @@ class AdminUsersListView(generics.ListAPIView):
         return qs
 
 
+VALID_ADMIN_ROLES = {'customer', 'designer', 'print_node', 'assembly_center', 'admin'}
+
+
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def admin_update_user(request, pk):
-    """Admin può attivare/disattivare, verificare e certificare profili."""
+    """Admin può attivare/disattivare, verificare, certificare profili e
+    cambiare il ruolo dell'utente.
+
+    Vincolo: ogni utente ha **un solo ruolo** (`target.roles = [role]`).
+    Cambiare ruolo crea automaticamente il profilo associato (Designer,
+    PrintNode, Assembly) se non esiste; i profili precedenti restano in DB
+    ma non sono piu' attivi (l'utente non ha piu' quel ruolo).
+    """
     user = request.user
     if not (user.is_staff or user.has_role('admin')):
         return Response({'detail': 'Solo gli admin.'}, status=403)
@@ -364,6 +372,37 @@ def admin_update_user(request, pk):
         target.is_active = new_active
     if 'is_verified' in request.data:
         target.is_verified = bool(request.data['is_verified'])
+
+    # Cambio ruolo (uno solo per utente)
+    if 'role' in request.data:
+        new_role = (request.data.get('role') or '').strip()
+        if new_role not in VALID_ADMIN_ROLES:
+            return Response({'detail': 'Ruolo non valido.'}, status=400)
+
+        # Guard: non puoi rimuovere admin a te stesso (lock-out prevention)
+        if target.id == user.id and target.has_role('admin') and new_role != 'admin':
+            return Response(
+                {'detail': 'Non puoi togliere il ruolo admin a te stesso.'},
+                status=400
+            )
+
+        target.roles = [new_role]
+        # is_staff coerente con role admin
+        target.is_staff = new_role == 'admin'
+
+        # Crea il profilo associato se non esiste (i profili vecchi restano
+        # in DB inerti — utili se in futuro l'utente cambia di nuovo ruolo).
+        if new_role == 'designer' and not hasattr(target, 'designer_profile'):
+            DesignerProfile.objects.create(user=target)
+        elif new_role == 'print_node' and not hasattr(target, 'print_node_profile'):
+            PrintNodeProfile.objects.create(
+                user=target, business_name='', address='', city='', province='IT'
+            )
+        elif new_role == 'assembly_center' and not hasattr(target, 'assembly_profile'):
+            AssemblyCenterProfile.objects.create(
+                user=target, business_name='', address='', city='', province='IT'
+            )
+
     target.save()
 
     # Certifica profile (per print_node, assembly_center, designer)

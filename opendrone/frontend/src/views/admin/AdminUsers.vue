@@ -37,7 +37,20 @@
           </div>
           <div class="email">{{ u.email }}</div>
           <div class="roles">
-            <span v-for="r in u.roles" :key="r" class="role-pill" :class="roleClassFor(r)">{{ roleLabel(r) }}</span>
+            <label class="role-edit">
+              <span class="re-label">Ruolo:</span>
+              <select class="re-select"
+                      :value="primaryRole(u)"
+                      :disabled="busy[u.id] || (u.id === auth.user?.id && primaryRole(u) === 'admin')"
+                      :title="u.id === auth.user?.id && primaryRole(u) === 'admin' ? 'Non puoi togliere admin a te stesso' : ''"
+                      @change="changeRole(u, $event.target.value)">
+                <option value="customer">Cliente</option>
+                <option value="designer">Designer</option>
+                <option value="print_node">Nodo stampa</option>
+                <option value="assembly_center">Centro assemblaggio</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
           </div>
         </div>
         <div class="actions">
@@ -151,6 +164,31 @@ async function toggleActive(u) {
   }
 }
 
+function primaryRole(u) {
+  // Ogni utente dovrebbe avere un solo ruolo. Se ne ha piu' (utenti pre-migration),
+  // usa la priorita' admin > designer > print_node > assembly_center > customer.
+  const order = ['admin', 'designer', 'print_node', 'assembly_center', 'customer']
+  for (const r of order) if (u.roles?.includes(r)) return r
+  return 'customer'
+}
+
+async function changeRole(u, newRole) {
+  if (newRole === primaryRole(u)) return // nessuna modifica
+  if (!confirm(`Confermi cambio ruolo per ${u.email}?\n${roleLabel(primaryRole(u))} → ${roleLabel(newRole)}`)) {
+    return
+  }
+  busy[u.id] = true
+  try {
+    const { data } = await adminApi.updateUser(u.id, { role: newRole })
+    Object.assign(u, data)
+    toast.show(`✓ ${u.email}: ruolo aggiornato a ${roleLabel(newRole)}`)
+  } catch (e) {
+    toast.show(e.response?.data?.detail || '✗ Errore cambio ruolo')
+  } finally {
+    busy[u.id] = false
+  }
+}
+
 async function certify(u) {
   let profile = null
   if (u.print_node_profile) profile = 'print_node'
@@ -230,6 +268,40 @@ onMounted(load)
 .role-pill.user { color: var(--muted); border-color: var(--border); background: var(--surface); }
 .role-pill.creator { color: var(--accent); border-color: rgba(93,255,159,.3); background: rgba(93,255,159,.06); }
 .role-pill.admin { color: var(--accent2); border-color: rgba(255,107,53,.3); background: rgba(255,107,53,.06); }
+
+.role-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.re-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.re-select {
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 24px 4px 10px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a7a90' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color .15s, color .15s;
+}
+.re-select:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.re-select:disabled { opacity: .5; cursor: not-allowed; }
+.re-select option { background: var(--card); color: var(--text); }
 
 .actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 

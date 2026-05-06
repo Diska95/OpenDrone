@@ -46,9 +46,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         role = validated_data.pop('role', 'customer')
         validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
+        # Vincolo: un solo ruolo per utente. Niente auto-aggiunta di 'customer'.
         user.roles = [role]
-        if 'customer' not in user.roles:
-            user.roles.append('customer')
         user.save()
         if role == 'designer':
             DesignerProfile.objects.create(user=user)
