@@ -23,13 +23,17 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = '__all__'
+        # Esclude internal_notes dall'output: non vogliamo mostrarlo al
+        # customer ne' ai print_node/assembly_center. L'admin lo vede via
+        # admin Django e (in futuro) via OrderAdminSerializer dedicato.
+        exclude = ['internal_notes']
         read_only_fields = [
             'customer', 'status', 'print_node', 'assembly_center',
             'design_fee', 'print_cost', 'components_cost', 'assembly_cost',
             'fast_track_fee', 'platform_commission', 'components_margin',
             'stripe_fee', 'insurance_amount', 'total_amount',
             'stripe_payment_intent_id', 'stripe_transfer_ids',
+            'tracking_number', 'tracking_url', 'courier',
             'created_at', 'updated_at', 'payment_confirmed_at', 'shipped_at', 'delivered_at',
         ]
 
